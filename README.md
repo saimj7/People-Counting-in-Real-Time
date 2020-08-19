@@ -60,6 +60,7 @@ python run.py --prototxt mobilenet_ssd/MobileNetSSD_deploy.prototxt --model mobi
 
 ## Features
 The following are some of the added features. Note: You can easily on/off them in the config options at the start of 'run.py':
+
 <img src="https://imgur.com/9hw1NP0.png" width=500>
 
 ***1. Real-Time alert:***
