@@ -210,8 +210,7 @@ def run():
 		# draw a horizontal line in the center of the frame -- once an
 		# object crosses this line we will determine whether they were
 		# moving 'up' or 'down'
-		#cv2.line(frame, (0, H // 2), (W, H // 2), (0, 255, 255), 2)
-		cv2.line(frame, (0, H // 2), (W, H // 2), (255, 255, 255), 3)
+		cv2.line(frame, (0, H // 2), (W, H // 2), (0, 0, 0), 3)
 		cv2.putText(frame, "-Prediction border - Entrance-", (10, H - ((i * 20) + 200)),
 			cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
 
@@ -285,8 +284,8 @@ def run():
 
 		# construct a tuple of information we will be displaying on the
 		info = [
-		("Up", totalUp),
-		("Down", totalDown),
+		("Exit", totalUp),
+		("Enter", totalDown),
 		("Status", status),
 		]
 
@@ -294,17 +293,16 @@ def run():
 		("Total people inside", x),
 		]
 
-        # display the output
+                # Display the output
 		for (i, (k, v)) in enumerate(info):
 			text = "{}: {}".format(k, v)
-			cv2.putText(frame, text, (10, H - ((i * 20) + 20)),	cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+			cv2.putText(frame, text, (10, H - ((i * 20) + 20)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 2)
 
 		for (i, (k, v)) in enumerate(info2):
 			text = "{}: {}".format(k, v)
-			cv2.putText(frame, text, (270, H - ((i * 20) + 60)),
-				cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+			cv2.putText(frame, text, (265, H - ((i * 20) + 60)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
-		# Simple log to save data at end of the day
+		# Initiate a simple log to save data at end of the day
 		if Log:
 			datetimee = [datetime.datetime.now()]
 			d = [datetimee, empty1, empty, x]
