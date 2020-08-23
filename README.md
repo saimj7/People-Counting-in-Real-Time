@@ -1,7 +1,9 @@
 # People-Counting-in-Real-Time
-> People Counting in Real-Time using live video stream/IP camera in OpenCV.
+People Counting in Real-Time using live video stream/IP camera in OpenCV.
 
-> This repo is a simple improvement/modification to https://www.pyimagesearch.com/2018/08/13/opencv-people-counter/
+> This repo is an improvement/modification to https://www.pyimagesearch.com/2018/08/13/opencv-people-counter/
+
+> Refer to added [Features](#features). Also, added support for an IP camera.
 
 <div align="center">
 <img src=https://imgur.com/tZYiOkt.gif" width=600>
@@ -47,7 +49,7 @@ python run.py --prototxt mobilenet_ssd/MobileNetSSD_deploy.prototxt --model mobi
 ```
 > To run inference on an IP camera:
 - Setup your camera url in 'run.py':
-```javascript
+```
 # the following is an ip camera url example
 # just enter your camera url and it should work
 url = 'http://191.138.0.100:8040/video'
@@ -68,16 +70,23 @@ The following are some of the added features. Note: You can easily on/off them i
 - This is pretty useful considering the COVID-19 scenario. 
 <img src="https://imgur.com/35Yf1SR.png" width=400>
 
-- Note: To setup the sender email, please refer the instructions inside 'mylib/mailer.py'
+- Note: To setup the sender email, please refer the instructions inside 'mylib/mailer.py'. Setup receiver email at the start of 'run.py'.
 
-***2. Scheduler & Timer:***
-- Automatic scheduler to start the software. This is extremely useful in a business scenario, for instance, run it only at your desired time (9-5?).
-- Stop running after a certain time, e.g., 30 min or 9 hours from now.
-```javascript
+***2. Scheduler:***
+- Automatic scheduler to start the software. Configure to run at every second, minute, day, or Monday to Friday.
+- This is extremely useful in a business scenario, for instance, you can run it only at your desired time (9-5?).
+- Variables and memory would be reset == less load on your machine.
+
+```
 ##Runs at every day (9:00 am). You can change it.
 schedule.every().day.at("9:00").do(run)
 ```
-```javascript
+
+***3. Timer:***
+- Configure stopping the software after a certain time, e.g., 30 min or 9 hours from now.
+- All you have to do is set your deired time and run the script.
+
+```
 if Timer:
 	# Automatic timer to stop the live stream. Set to 8 hours (28800s).
 	t1 = time.time()
@@ -85,7 +94,8 @@ if Timer:
 	if num_seconds > 28800:
 		break
 ```
-***3. Simple log:***
+
+***4. Simple log:***
 - Logs all data at end of the day.
 - Useful for footfall analysis.
 <img src="https://imgur.com/CV2nCjx.png" width=400>
