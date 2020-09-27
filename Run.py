@@ -3,35 +3,14 @@ from mylib.trackableobject import TrackableObject
 from imutils.video import VideoStream
 from imutils.video import FPS
 from mylib.mailer import Mailer
+from mylib import config
 import time, schedule, csv
 import numpy as np
-import argparse
-import imutils
-import time
-import dlib
-import cv2, datetime
+import argparse, imutils
+import time, dlib, cv2, datetime
 from itertools import zip_longest
 
 t0 = time.time()
-
-#===============================================================================
-""" Optional features """
-#===============================================================================
-# Enter mail below to receive real-time email alerts
-# e.g., 'email@gmail.com'
-MAIL = ''
-
-# ON/OFF for mail feature. Enter True to turn on the email alert feature.
-ALERT = False
-
-# Simple log to log the counting data
-Log = False
-# Auto run/Schedule the software to run at your desired time
-Scheduler = False
-# Auto stop the software after certain a time/hours
-Timer = False
-#===============================================================================
-#===============================================================================
 
 
 def run():
@@ -264,9 +243,9 @@ def run():
 						# if the limit exceeds, send an email alert
 						people_limit = 10
 						if sum(x) == people_limit:
-							if ALERT:
+							if config.ALERT:
 								print("[INFO] Sending email alert..")
-								Mailer().send(MAIL)
+								Mailer().send(config.MAIL)
 								print("[INFO] Alert sent")
 
 						to.counted = True
@@ -303,7 +282,7 @@ def run():
 			cv2.putText(frame, text, (265, H - ((i * 20) + 60)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
 		# Initiate a simple log to save data at end of the day
-		if Log:
+		if config.Log:
 			datetimee = [datetime.datetime.now()]
 			d = [datetimee, empty1, empty, x]
 			export_data = zip_longest(*d, fillvalue = '')
@@ -327,7 +306,7 @@ def run():
 		totalFrames += 1
 		fps.update()
 
-		if Timer:
+		if config.Timer:
 			# Automatic timer to stop the live stream. Set to 8 hours (28800s).
 			t1 = time.time()
 			num_seconds=(t1-t0)
@@ -353,7 +332,7 @@ def run():
 
 
 ##learn more about different schedules here: https://pypi.org/project/schedule/
-if Scheduler:
+if config.Scheduler:
 	##Runs for every 1 second
 	#schedule.every(1).seconds.do(run)
 	##Runs at every day (9:00 am). You can change it.

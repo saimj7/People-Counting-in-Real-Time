@@ -1,15 +1,8 @@
-smtplib
-ssl
-time
 schedule
-csv
 numpy
 argparse
 imutils
-time
 dlib
-cv2
-datetime
+opencv-python
 itertools
 scipy
-collections
