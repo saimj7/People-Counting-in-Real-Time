@@ -72,7 +72,18 @@ The following are some of the added features. Note: You can easily on/off them i
 
 - Note: To setup the sender email, please refer the instructions inside 'mylib/mailer.py'. Setup receiver email at the start of 'run.py'.
 
-***2. Scheduler:***
+
+***2. Threading:***
+- Multi-Threading is implemented in 'Thread.py'. If you ever see a lag/delay in your real-time stream, consider running it.
+- Threaing removes OpenCV's internal buffer (which stores the frames yet to be processed) and thus reduces the lag. 
+- It is most preferred for complex real-time applications. Use the command:
+
+```
+python thread.py --prototxt mobilenet_ssd/MobileNetSSD_deploy.prototxt --model mobilenet_ssd/MobileNetSSD_deploy.caffemodel
+```
+
+
+***3. Scheduler:***
 - Automatic scheduler to start the software. Configure to run at every second, minute, day, or Monday to Friday.
 - This is extremely useful in a business scenario, for instance, you can run it only at your desired time (9-5?).
 - Variables and memory would be reset == less load on your machine.
@@ -82,7 +93,7 @@ The following are some of the added features. Note: You can easily on/off them i
 schedule.every().day.at("9:00").do(run)
 ```
 
-***3. Timer:***
+***4. Timer:***
 - Configure stopping the software after a certain time, e.g., 30 min or 9 hours from now.
 - All you have to do is set your deired time and run the script.
 
