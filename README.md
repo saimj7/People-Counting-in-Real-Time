@@ -1,7 +1,7 @@
 # People-Counting-in-Real-Time
 People Counting in Real-Time using live video stream/IP camera in OpenCV.
 
-> This repo is an improvement/modification to https://www.pyimagesearch.com/2018/08/13/opencv-people-counter/
+> This is an improvement/modification to https://www.pyimagesearch.com/2018/08/13/opencv-people-counter/
 
 > Refer to added [Features](#features). Also, added support for an IP camera.
 
@@ -13,6 +13,7 @@ People Counting in Real-Time using live video stream/IP camera in OpenCV.
 - The primary aim is to use the project as a business perspective, ready to scale.
 - Use case: counting the number of people in the stores/buildings/shopping malls etc., in real-time.
 - Sending an alert to the staff if the people are way over the limit.
+- Automating features and optimising the real-time stream for better performance.
 - Acts as a measure towards footfall analysis and in a way to tackle COVID-19.
 
 --- 
@@ -48,12 +49,11 @@ pip install -r requirements.txt
 python run.py --prototxt mobilenet_ssd/MobileNetSSD_deploy.prototxt --model mobilenet_ssd/MobileNetSSD_deploy.caffemodel --input videos/example_01.mp4
 ```
 > To run inference on an IP camera:
-- Setup your camera url in 'run.py':
+- Setup your camera url in 'mylib/config.py':
+
 ```
-# the following is an ip camera url example
-# just enter your camera url and it should work
-url = 'http://191.138.0.100:8040/video'
-vs = VideoStream(url).start()
+# Enter the ip camera url (e.g., url = 'http://191.138.0.100:8040/video')
+url = ''
 ```
 - Then run with the command:
 ```
@@ -61,26 +61,24 @@ python run.py --prototxt mobilenet_ssd/MobileNetSSD_deploy.prototxt --model mobi
 ```
 
 ## Features
-The following are some of the added features. Note: You can easily on/off them in the config. options (mylib>config.py):
+The following are the added features. Note: You can easily on/off them in the config. options (mylib/config.py):
 
-<img src="https://imgur.com/9hw1NP0.png" width=500>
+<img src="https://imgur.com/Lr8mdUW.png" width=500>
 
 ***1. Real-Time alert:***
 - If selected, we send an email alert in real-time. Use case: If the total number of people (say 30) exceeded in a store/building, we simply alert the staff. 
 - This is pretty useful considering the COVID-19 scenario. 
-<img src="https://imgur.com/35Yf1SR.png" width=400>
+<img src="https://imgur.com/35Yf1SR.png" width=350>
 
-- Note: To setup the sender email, please refer the instructions inside 'mylib/mailer.py'. Setup receiver email at the start of 'run.py'.
+- Note: To setup the sender email, please refer the instructions inside 'mylib/mailer.py'. Setup receiver email in the config.
 
 
 ***2. Threading:***
-- Multi-Threading is implemented in 'Thread.py'. If you ever see a lag/delay in your real-time stream, consider running it.
-- Threaing removes OpenCV's internal buffer (which stores the frames yet to be processed) and thus reduces the lag. 
-- It is most preferred for complex real-time applications. Use the command:
+- Multi-Threading is implemented in 'mylib/thread.py'. If you ever see a lag/delay in your real-time stream, consider using it.
+- Threaing removes OpenCV's internal buffer (which stores the frames yet to be processed) and thus reduces the lag/increases fps. 
+- It is most suitable for solid performance on complex real-time applications. To use threading:
 
-```
-python thread.py --prototxt mobilenet_ssd/MobileNetSSD_deploy.prototxt --model mobilenet_ssd/MobileNetSSD_deploy.caffemodel
-```
+``` set Thread = True in config. ```
 
 
 ***3. Scheduler:***
@@ -106,7 +104,7 @@ if Timer:
 		break
 ```
 
-***4. Simple log:***
+***5. Simple log:***
 - Logs all data at end of the day.
 - Useful for footfall analysis.
 <img src="https://imgur.com/CV2nCjx.png" width=400>

@@ -3,7 +3,7 @@ from mylib.trackableobject import TrackableObject
 from imutils.video import VideoStream
 from imutils.video import FPS
 from mylib.mailer import Mailer
-from mylib import config
+from mylib import config, thread
 import time, schedule, csv
 import numpy as np
 import argparse, imutils
@@ -11,7 +11,6 @@ import time, dlib, cv2, datetime
 from itertools import zip_longest
 
 t0 = time.time()
-
 
 def run():
 
@@ -45,14 +44,12 @@ def run():
 	# if a video path was not supplied, grab a reference to the ip camera
 	if not args.get("input", False):
 		print("[INFO] Starting the live stream..")
-		# the following is an ip camera url example
-		# just enter your camera url and it should work
-		url = 'http://191.138.0.100:8040/video'
-		vs = VideoStream(url).start()
+		vs = VideoStream(config.url).start()
 		time.sleep(2.0)
 
 	# otherwise, grab a reference to the video file
 	else:
+		print("[INFO] Starting the video..")
 		vs = cv2.VideoCapture(args["input"])
 
 	# initialize the video writer (we'll instantiate later if need be)
@@ -82,6 +79,9 @@ def run():
 	# start the frames per second throughput estimator
 	fps = FPS().start()
 
+	if config.Thread:
+		vs = thread.ThreadingClass(config.url)
+
 	# loop over frames from the video stream
 	while True:
 		# grab the next frame and handle if we are reading from either
@@ -97,7 +97,7 @@ def run():
 		# resize the frame to have a maximum width of 500 pixels (the
 		# less data we have, the faster we can process it), then convert
 		# the frame from BGR to RGB for dlib
-		frame = imutils.resize(frame, width=500)
+		frame = imutils.resize(frame, width = 500)
 		rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
 		# if the frame dimensions are empty, set them
@@ -319,13 +319,13 @@ def run():
 	print("[INFO] approx. FPS: {:.2f}".format(fps.fps()))
 
 
-	# if we are not using a video file, stop the camera video stream
-	if not args.get("input", False):
-		vs.stop()
-
-	# otherwise, release the video file pointer
-	else:
-		vs.release()
+	# # if we are not using a video file, stop the camera video stream
+	# if not args.get("input", False):
+	# 	vs.stop()
+	#
+	# # otherwise, release the video file pointer
+	# else:
+	# 	vs.release()
 
 	# close any open windows
 	cv2.destroyAllWindows()
