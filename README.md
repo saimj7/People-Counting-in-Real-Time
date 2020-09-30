@@ -13,7 +13,7 @@ People Counting in Real-Time using live video stream/IP camera in OpenCV.
 - The primary aim is to use the project as a business perspective, ready to scale.
 - Use case: counting the number of people in the stores/buildings/shopping malls etc., in real-time.
 - Sending an alert to the staff if the people are way over the limit.
-- Automating features and optimising the real-time stream for better performance.
+- Automating features and optimising the real-time stream for better performance (with threading).
 - Acts as a measure towards footfall analysis and in a way to tackle COVID-19.
 
 --- 
@@ -75,7 +75,8 @@ The following are the added features. Note: You can easily on/off them in the co
 
 ***2. Threading:***
 - Multi-Threading is implemented in 'mylib/thread.py'. If you ever see a lag/delay in your real-time stream, consider using it.
-- Threaing removes OpenCV's internal buffer (which stores the frames yet to be processed) and thus reduces the lag/increases fps. 
+- Threading removes OpenCV's internal buffer (which basically stores the new frames yet to be processed until your system processes the old frames) and thus reduces the lag/increases fps. 
+- If your system is not capable of simultaneously processing and outputting the result, you might see a delay in the stream. This is where threading comes into action.
 - It is most suitable for solid performance on complex real-time applications. To use threading:
 
 ``` set Thread = True in config. ```
@@ -93,7 +94,7 @@ schedule.every().day.at("9:00").do(run)
 
 ***4. Timer:***
 - Configure stopping the software after a certain time, e.g., 30 min or 9 hours from now.
-- All you have to do is set your deired time and run the script.
+- All you have to do is set your desired time and run the script.
 
 ```
 if Timer:
