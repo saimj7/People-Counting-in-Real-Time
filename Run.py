@@ -239,10 +239,10 @@ def run():
 						# compute the sum of total people inside
 						x.append(len(empty1)-len(empty))
 						#print("Total people inside:", x)
-						# Optimise number below: 10, 50, 100, etc., indicate the max. people inside limit
-						# if the limit exceeds, send an email alert
-						people_limit = 10
-						if sum(x) == people_limit:
+						# if the people limit exceeds over threshold, send an email alert
+						if sum(x) >= config.Threshold:
+							cv2.putText(frame, "-ALERT: People limit exceeded-", (10, frame.shape[0] - 80),
+								cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255), 2)
 							if config.ALERT:
 								print("[INFO] Sending email alert..")
 								Mailer().send(config.MAIL)

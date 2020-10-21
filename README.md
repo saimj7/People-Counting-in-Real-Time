@@ -59,14 +59,16 @@ url = ''
 ```
 python run.py --prototxt mobilenet_ssd/MobileNetSSD_deploy.prototxt --model mobilenet_ssd/MobileNetSSD_deploy.caffemodel
 ```
+> Set url = 0 for webcam.
 
 ## Features
-The following are the added features. Note: You can easily on/off them in the config. options (mylib/config.py):
+The following is an example of the added features. Note: You can easily on/off them in the config. options (mylib/config.py):
 
 <img src="https://imgur.com/Lr8mdUW.png" width=500>
 
 ***1. Real-Time alert:***
-- If selected, we send an email alert in real-time. Use case: If the total number of people (say 30) exceeded in a store/building, we simply alert the staff. 
+- If selected, we send an email alert in real-time. Use case: If the total number of people (say 10 or 30) exceeded in a store/building, we simply alert the staff. 
+- You can set the max. people limit in config. (``` Threshold = 10 ```).
 - This is pretty useful considering the COVID-19 scenario. 
 <img src="https://imgur.com/35Yf1SR.png" width=350>
 
