@@ -26,3 +26,6 @@ class ThreadingClass:
 
   def read(self):
     return self.q.get() # fetch frames from the queue one by one
+
+  def release(self):
+    return self.cap.release() # release the hw resource
