@@ -326,6 +326,10 @@ def run():
 	# # otherwise, release the video file pointer
 	# else:
 	# 	vs.release()
+	
+	# issue 15
+	if config.Thread:
+		vs.release()
 
 	# close any open windows
 	cv2.destroyAllWindows()
