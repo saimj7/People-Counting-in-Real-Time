@@ -6,7 +6,7 @@ People Counting in Real-Time using live video stream/IP camera in OpenCV.
 > Refer to added [Features](#features). Also, added support for an IP camera.
 
 <div align="center">
-<img src=https://imgur.com/tZYiOkt.gif" width=600>
+<img src=https://imgur.com/SaF1kk3.gif" width=550>
 <p>Live demo</p>
 </div>
 
