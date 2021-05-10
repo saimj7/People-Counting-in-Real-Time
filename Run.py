@@ -235,10 +235,6 @@ def run():
 						totalDown += 1
 						empty1.append(totalDown)
 						#print(empty1[-1])
-						x = []
-						# compute the sum of total people inside
-						x.append(len(empty1)-len(empty))
-						#print("Total people inside:", x)
 						# if the people limit exceeds over threshold, send an email alert
 						if sum(x) >= config.Threshold:
 							cv2.putText(frame, "-ALERT: People limit exceeded-", (10, frame.shape[0] - 80),
@@ -249,6 +245,11 @@ def run():
 								print("[INFO] Alert sent")
 
 						to.counted = True
+						
+					x = []
+					# compute the sum of total people inside
+					x.append(len(empty1)-len(empty))
+					#print("Total people inside:", x)
 
 
 			# store the trackable object in our dictionary
