@@ -107,7 +107,7 @@ def run():
 		# if we are supposed to be writing a video to disk, initialize
 		# the writer
 		if args["output"] is not None and writer is None:
-			fourcc = cv2.VideoWriter_fourcc(*"MJPG")
+			fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 			writer = cv2.VideoWriter(args["output"], fourcc, 30,
 				(W, H), True)
 
@@ -292,7 +292,10 @@ def run():
 				wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
 				wr.writerow(("End Time", "In", "Out", "Total Inside"))
 				wr.writerows(export_data)
-
+				
+		# check to see if we should write the frame to disk
+		if writer is not None:
+			writer.write(frame)
 
 		# show the output frame
 		cv2.imshow("Real-Time Monitoring/Analysis Window", frame)
