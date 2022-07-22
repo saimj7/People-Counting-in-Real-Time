@@ -40,16 +40,16 @@ People Counting in Real-Time using live video stream/IP camera in OpenCV.
 - Then an unique ID is assigned to every particular object deteced, for tracking over the sequence of frames.
 
 ## Running Inference
-- Install all the required Python dependencies:
+- First up, install all the required Python dependencies:
 ```
 pip install -r requirements.txt
 ```
+> The requirements will be updated timely, but note that there can always be verion conflicts between the dependenceies themselves and other factors like OS, hardware etc.
 - To run inference on a test video file, head into the directory/use the command: 
 ```
 python run.py --prototxt mobilenet_ssd/MobileNetSSD_deploy.prototxt --model mobilenet_ssd/MobileNetSSD_deploy.caffemodel --input videos/example_01.mp4
 ```
-> To run inference on an IP camera:
-- Setup your camera url in 'mylib/config.py':
+- To run inference on an IP camera, first setup your camera url in 'mylib/config.py':
 
 ```
 # Enter the ip camera url (e.g., url = 'http://191.138.0.100:8040/video')

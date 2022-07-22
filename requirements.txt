@@ -1,7 +1,8 @@
-schedule==0.6.0
-numpy==1.19.2
+schedule==1.1.0
+numpy==1.22.3
 argparse==1.4.0
-imutils==0.5.3
+imutils==0.5.4
 dlib==19.18.0
-opencv-python==4.2.0.32
-scipy==1.4.1
+opencv-python==4.5.5.64
+scipy==1.8.0
+cmake==3.22.5
