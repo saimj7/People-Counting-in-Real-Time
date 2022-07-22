@@ -44,7 +44,7 @@ People Counting in Real-Time using live video stream/IP camera in OpenCV.
 ```
 pip install -r requirements.txt
 ```
-> The requirements will be updated timely, but note that there can always be verion conflicts between the dependenceies themselves and other factors like OS, hardware etc.
+> The requirements will be updated timely, but note that there can always be version conflicts between the dependencies themselves and other factors like OS, hardware etc.
 - To run inference on a test video file, head into the directory/use the command: 
 ```
 python run.py --prototxt mobilenet_ssd/MobileNetSSD_deploy.prototxt --model mobilenet_ssd/MobileNetSSD_deploy.caffemodel --input videos/example_01.mp4
