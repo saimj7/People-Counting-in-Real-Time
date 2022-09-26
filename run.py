@@ -186,81 +186,9 @@ def run():
 				# add the bounding box coordinates to the rectangles list
 				rects.append((startX, startY, endX, endY))
 
-		# draw a horizontal line in the center of the frame -- once an
-		# object crosses this line we will determine whether they were
-		# moving 'up' or 'down'
-		cv2.line(frame, (0, H // 2), (W, H // 2), (0, 0, 0), 3)
-		cv2.putText(frame, "-Prediction border - Entrance-", (10, H - ((i * 20) + 200)),
-			cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
-
 		# use the centroid tracker to associate the (1) old object
 		# centroids with (2) the newly computed object centroids
 		objects = ct.update(rects)
-
-		# loop over the tracked objects
-		for (objectID, centroid) in objects.items():
-			# check to see if a trackable object exists for the current
-			# object ID
-			to = trackableObjects.get(objectID, None)
-
-			# if there is no existing trackable object, create one
-			if to is None:
-				to = TrackableObject(objectID, centroid)
-
-			# otherwise, there is a trackable object so we can utilize it
-			# to determine direction
-			else:
-				# the difference between the y-coordinate of the *current*
-				# centroid and the mean of *previous* centroids will tell
-				# us in which direction the object is moving (negative for
-				# 'up' and positive for 'down')
-				y = [c[1] for c in to.centroids]
-				direction = centroid[1] - np.mean(y)
-				to.centroids.append(centroid)
-
-				# check to see if the object has been counted or not
-				if not to.counted:
-					# if the direction is negative (indicating the object
-					# is moving up) AND the centroid is above the center
-					# line, count the object
-					if direction < 0 and centroid[1] < H // 2:
-						totalUp += 1
-						empty.append(totalUp)
-						to.counted = True
-
-					# if the direction is positive (indicating the object
-					# is moving down) AND the centroid is below the
-					# center line, count the object
-					elif direction > 0 and centroid[1] > H // 2:
-						totalDown += 1
-						empty1.append(totalDown)
-						#print(empty1[-1])
-						# if the people limit exceeds over threshold, send an email alert
-						if sum(x) >= config.Threshold:
-							cv2.putText(frame, "-ALERT: People limit exceeded-", (10, frame.shape[0] - 80),
-								cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255), 2)
-							if config.ALERT:
-								print("[INFO] Sending email alert..")
-								Mailer().send(config.MAIL)
-								print("[INFO] Alert sent")
-
-						to.counted = True
-						
-					x = []
-					# compute the sum of total people inside
-					x.append(len(empty1)-len(empty))
-					#print("Total people inside:", x)
-
-
-			# store the trackable object in our dictionary
-			trackableObjects[objectID] = to
-
-			# draw both the ID of the object and the centroid of the
-			# object on the output frame
-			text = "ID {}".format(objectID)
-			cv2.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),
-				cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
-			cv2.circle(frame, (centroid[0], centroid[1]), 4, (255, 255, 255), -1)
 
 		# construct a tuple of information we will be displaying on the
 		info = [
@@ -270,7 +198,7 @@ def run():
 		]
 
 		info2 = [
-		("Total people inside", x),
+		("Total people:", len(objects)),
 		]
 
                 # Display the output
