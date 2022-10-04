@@ -190,6 +190,27 @@ def run():
 		# centroids with (2) the newly computed object centroids
 		objects = ct.update(rects)
 
+		# loop over the tracked objects
+		for (objectID, centroid) in objects.items():
+			# check to see if a trackable object exists for the current
+			# object ID
+			to = trackableObjects.get(objectID, None)
+
+			# if there is no existing trackable object, create one
+			if to is None:
+				to = TrackableObject(objectID, centroid)
+
+			# store the trackable object in our dictionary
+			trackableObjects[objectID] = to
+
+			# draw both the ID of the object and the centroid of the
+			# object on the output frame
+			text = "ID {}".format(objectID)
+			cv2.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),
+				cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+			cv2.circle(frame, (centroid[0], centroid[1]), 4, (255, 255, 255), -1)	
+
+
 		# construct a tuple of information we will be displaying on the
 		info = [
 		("Exit", totalUp),
