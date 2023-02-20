@@ -6,9 +6,13 @@ from mylib.mailer import Mailer
 from mylib import config, thread
 import time, schedule, csv
 import numpy as np
+import cv2
 import argparse, imutils
-import time, dlib, cv2, datetime
+import time, dlib, datetime
 from itertools import zip_longest
+
+import sqlite3
+import datetime
 
 t0 = time.time()
 
@@ -45,6 +49,7 @@ def run():
 	if not args.get("input", False):
 		print("[INFO] Starting the live stream..")
 		vs = VideoStream(config.url).start()
+		#vs = VideoStream("rtsp://tapo233F:Riouch2000@192.168.1.12:8080").start()
 		time.sleep(2.0)
 
 	# otherwise, grab a reference to the video file
@@ -81,12 +86,16 @@ def run():
 
 	if config.Thread:
 		vs = thread.ThreadingClass(config.url)
+		print("vs = thread")
+		print(frame)
 
 	# loop over frames from the video stream
 	while True:
 		# grab the next frame and handle if we are reading from either
 		# VideoCapture or VideoStream
 		frame = vs.read()
+		#print("frame = vs.read" + frame)
+
 		frame = frame[1] if args.get("input", False) else frame
 
 		# if we are viewing a video and we did not grab a frame then we
@@ -273,6 +282,7 @@ def run():
 		("Total people inside", x),
 		]
 
+
                 # Display the output
 		for (i, (k, v)) in enumerate(info):
 			text = "{}: {}".format(k, v)
@@ -300,6 +310,7 @@ def run():
 		# show the output frame
 		cv2.imshow("Real-Time Monitoring/Analysis Window", frame)
 		key = cv2.waitKey(1) & 0xFF
+		
 
 		# if the `q` key was pressed, break from the loop
 		if key == ord("q"):
