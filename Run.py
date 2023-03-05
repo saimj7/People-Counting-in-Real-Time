@@ -12,7 +12,7 @@ import time, dlib, datetime
 from itertools import zip_longest
 
 import sqlite3
-import random
+
 
 t0 = time.time()
 
@@ -58,8 +58,6 @@ def run():
 		print("[INFO] Starting the video..")
 		vs = cv2.VideoCapture(args["input"])
 
-	# initialize the video writer (we'll instantiate later if need be)
-	writer = None
 
 	# initialize the frame dimensions (we'll set them as soon as we read
 	# the first frame from the video)
@@ -90,6 +88,33 @@ def run():
 		print("vs = thread")
 		print(frame)
 
+#-------------------------GUARDAR EN BASE DATOS-----------------------------------
+	#Crear conexion a la base de datos( si no existe, se creará automaticamente)
+	conn = sqlite3.connect("C:\\Users\\miria\\OneDrive\\Documentos\\universidad\\4º AÑO\\2ºcuatri\\TFG\\People-Counting\\People-Counting-in-Real-Time\\bbdd\\mydb.db")
+	#Crear un cursor para ejecutar comandos SQL
+	cur = conn.cursor()
+	#Crear una tabla llamada registros con tres columnas, fecha, hora, ocupacion
+	cur.execute("CREATE TABLE IF NOT EXISTS biblioteca (fecha TEXT, hora TEXT, ocupacion INTEGER)")
+	#Guardamos cambios en la base de datos
+	conn.commit()
+
+	# Definir una funcion que inserte un registro cada hora en la tabla
+	def guardar_x(x):
+		#Obtener la fecha y hora actuales y convertirlas en cadenas de texto
+		fecha = datetime.date.today().strftime("%d/%m/%Y")
+		hora = datetime.datetime.now().strftime("%H:%M:%S")
+		#Insertar el registro en la tabla con los valores de fecha, hora  y ocupacion
+		cur.execute("INSERT INTO biblioteca (fecha, hora, ocupacion) VALUES (?,?,?)", (fecha, hora, x))
+		#Guardar los cambios en la base de datos
+		conn.commit()
+		
+
+		#comprobacion
+		print(f"Se ha insertadp el registro: {fecha}, {hora}, {x}")
+	
+
+	#--------------------------------------------------------------------
+
 	# loop over frames from the video stream
 	while True:
 		# grab the next frame and handle if we are reading from either
@@ -113,13 +138,6 @@ def run():
 		# if the frame dimensions are empty, set them
 		if W is None or H is None:
 			(H, W) = frame.shape[:2]
-
-		# if we are supposed to be writing a video to disk, initialize
-		# the writer
-		if args["output"] is not None and writer is None:
-			fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-			writer = cv2.VideoWriter(args["output"], fourcc, 30,
-				(W, H), True)
 
 		# initialize the current status along with our list of bounding
 		# box rectangles returned by either (1) our object detector or
@@ -283,7 +301,8 @@ def run():
 		("Total people inside", x),
 		]
 
-
+		ocu = totalDown - totalUp
+		guardar_x(ocu)
 
               # Display the output
 		for (i, (k, v)) in enumerate(info):
@@ -295,10 +314,6 @@ def run():
 			cv2.putText(frame, text, (265, H - ((i * 20) + 60)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
 				
-		# check to see if we should write the frame to disk
-		if writer is not None:
-			writer.write(frame)
-
 		# show the output frame
 		cv2.imshow("Real-Time Monitoring/Analysis Window", frame)
 		key = cv2.waitKey(1) & 0xFF
