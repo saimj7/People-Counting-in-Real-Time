@@ -10,7 +10,7 @@ import cv2
 import argparse, imutils
 import time, dlib, datetime
 from itertools import zip_longest
-
+import threading
 import sqlite3
 
 
@@ -90,7 +90,7 @@ def run():
 
 #-------------------------GUARDAR EN BASE DATOS-----------------------------------
 	#Crear conexion a la base de datos( si no existe, se creará automaticamente)
-	conn = sqlite3.connect("C:\\Users\\miria\\OneDrive\\Documentos\\universidad\\4º AÑO\\2ºcuatri\\TFG\\People-Counting\\People-Counting-in-Real-Time\\bbdd\\mydb.db")
+	conn = sqlite3.connect("C:\\Users\\miria\\OneDrive\\Documentos\\universidad\\4º AÑO\\2ºcuatri\\TFG\\People-Counting\\People-Counting-in-Real-Time\\bbdd\\mydb.db", check_same_thread=False)
 	#Crear un cursor para ejecutar comandos SQL
 	cur = conn.cursor()
 	#Crear una tabla llamada registros con tres columnas, fecha, hora, ocupacion
@@ -112,7 +112,26 @@ def run():
 		#comprobacion
 		print(f"Se ha insertadp el registro: {fecha}, {hora}, {x}")
 	
+	#--------------------THREAD---------------------------------------------
+	global ocu_global 
+	ocu_global= 0
 
+	#Definir una función que se ejecuta cada hora en un hilo
+	def guardar_datos_cada_hora():
+		#Esperar hasta la proxima hora
+		time.sleep(60 * (60 - datetime.datetime.now().minute))
+		#time.sleep(10)
+		#Ejecutar la funcion cada hora
+		while True:
+			#Acceder a la variable global ocu_global
+			ocu_global
+			#Llamar a la funcion guardar_x() con el valaor ocu_global
+			guardar_x(ocu_global)
+			time.sleep(60 * 60)
+			#time.sleep(10)
+	#Crear y lanzar el hilo
+	hilo = threading.Thread(target=guardar_datos_cada_hora)
+	hilo.start()
 	#--------------------------------------------------------------------
 
 	# loop over frames from the video stream
@@ -302,7 +321,7 @@ def run():
 		]
 
 		ocu = totalDown - totalUp
-		guardar_x(ocu)
+		ocu_global = ocu
 
               # Display the output
 		for (i, (k, v)) in enumerate(info):
