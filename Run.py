@@ -4,7 +4,7 @@ from imutils.video import VideoStream
 from imutils.video import FPS
 from mylib.mailer import Mailer
 from mylib import config, thread
-import time, schedule, csv
+import time, schedule
 import numpy as np
 import cv2
 import argparse, imutils
@@ -12,9 +12,10 @@ import time, dlib, datetime
 from itertools import zip_longest
 
 import sqlite3
-import datetime
+import random
 
 t0 = time.time()
+
 
 def run():
 
@@ -283,7 +284,8 @@ def run():
 		]
 
 
-                # Display the output
+
+              # Display the output
 		for (i, (k, v)) in enumerate(info):
 			text = "{}: {}".format(k, v)
 			cv2.putText(frame, text, (10, H - ((i * 20) + 20)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 2)
@@ -292,16 +294,6 @@ def run():
 			text = "{}: {}".format(k, v)
 			cv2.putText(frame, text, (265, H - ((i * 20) + 60)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
-		# Initiate a simple log to save data at end of the day
-		if config.Log:
-			datetimee = [datetime.datetime.now()]
-			d = [datetimee, empty1, empty, x]
-			export_data = zip_longest(*d, fillvalue = '')
-
-			with open('Log.csv', 'w', newline='') as myfile:
-				wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
-				wr.writerow(("End Time", "In", "Out", "Total Inside"))
-				wr.writerows(export_data)
 				
 		# check to see if we should write the frame to disk
 		if writer is not None:
@@ -348,7 +340,7 @@ def run():
 
 	# close any open windows
 	cv2.destroyAllWindows()
-
+	
 
 ##learn more about different schedules here: https://pypi.org/project/schedule/
 if config.Scheduler:
