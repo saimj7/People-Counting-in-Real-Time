@@ -16,7 +16,9 @@ import mysql.connector
 
 
 t0 = time.time()
-
+#Declaramos la variable global ocupación anterior al principio del código, 
+global ocu_anterior
+ocu_anterior = -1
 
 def run():
 
@@ -307,7 +309,15 @@ def run():
 		]
 
 		ocu = totalDown - totalUp
-		guardar_x(ocu)
+		
+		#Obtenemos el valor de la variable ocupacion anterior
+		global ocu_anterior
+		# Comparar el valor actual con el anterior, si es diferente guardamos ese valor en la tabla, si no pasamos
+		if ocu !=ocu_anterior:
+			guardar_x(ocu)
+			ocu_anterior = ocu
+		else:
+			pass
 
               # Display the output
 		for (i, (k, v)) in enumerate(info):
