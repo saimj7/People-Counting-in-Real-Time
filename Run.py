@@ -332,7 +332,7 @@ def run():
 			text = "{}: {}".format(k, v)
 			cv2.putText(frame, text, (265, H - ((i * 20) + 60)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
-				
+		#------------------Conteo mostrando imagen en pantalla--------------------------------------------		
 		# show the output frame
 		cv2.imshow("Real-Time Monitoring/Analysis Window", frame)
 		key = cv2.waitKey(1) & 0xFF
@@ -341,7 +341,15 @@ def run():
 		# if the `q` key was pressed, break from the loop
 		if key == ord("q"):
 			break
+		
+		#------------------Conteo sin mostrar imagen en pantalla------------------------------------------	
+		
+		# if the `q` key was pressed, break from the loop
+		# if cv2.waitKey(1) & 0xFF == ord("q"):
+		# 	break
 
+		#------------------------------------------------------------	
+		
 		# increment the total number of frames processed thus far and
 		# then update the FPS counter
 		totalFrames += 1
