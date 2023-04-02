@@ -11,9 +11,8 @@ import argparse, imutils
 import time, dlib, datetime
 from datetime import datetime
 from itertools import zip_longest
-import threading
 import mysql.connector
-
+from mylib.config import prototxt, model, frame_size, downIsEntry, line_color, line_position, line_thickness, pixel_end_height, pixel_end_width, pixel_start_height, pixel_start_width 
 
 t0 = time.time()
 #Declaramos la variable global ocupación anterior al principio del código, 
@@ -24,12 +23,6 @@ def run():
 
 	# construct the argument parse and parse the arguments
 	ap = argparse.ArgumentParser()
-	ap.add_argument("-p", "--prototxt", required=False,
-		help="path to Caffe 'deploy' prototxt file")
-	ap.add_argument("-m", "--model", required=True,
-		help="path to Caffe pre-trained model")
-	ap.add_argument("-i", "--input", type=str,
-		help="path to optional input video file")
 	ap.add_argument("-o", "--output", type=str,
 		help="path to optional output video file")
 	# confidence default 0.4
@@ -47,19 +40,14 @@ def run():
 		"sofa", "train", "tvmonitor"]
 
 	# load our serialized model from disk
-	net = cv2.dnn.readNetFromCaffe(args["prototxt"], args["model"])
+	net = cv2.dnn.readNetFromCaffe(prototxt, model)
 
-	# if a video path was not supplied, grab a reference to the ip camera
-	if not args.get("input", False):
-		print("[INFO] Starting the live stream..")
-		vs = VideoStream(config.url).start()
-		#vs = VideoStream("rtsp://tapo233F:Riouch2000@192.168.1.12:8080").start()
-		time.sleep(2.0)
+	# grab a reference to the ip camera
+	print("[INFO] Starting the live stream..")
+	vs = VideoStream(config.url).start()
+	#vs = VideoStream("rtsp://tapo233F:Riouch2000@192.168.1.12:8080").start()
+	time.sleep(2.0)
 
-	# otherwise, grab a reference to the video file
-	else:
-		print("[INFO] Starting the video..")
-		vs = cv2.VideoCapture(args["input"])
 
 
 	# initialize the frame dimensions (we'll set them as soon as we read
@@ -101,9 +89,9 @@ def run():
 	#Crear un cursor para ejecutar comandos SQL
 	cur = conn.cursor()
 	#Crear una base de datos llamada base si no existe
-	cur.execute("CREATE DATABASE IF NOT EXISTS mydb")
+	cur.execute("CREATE DATABASE IF NOT EXISTS db")
 	#Usar la base de datos creada
-	cur.execute("USE mydb")
+	cur.execute("USE db")
 	#Crear una tabla llamada registros con tres columnas, fecha, hora, ocupacion
 	cur.execute("CREATE TABLE IF NOT EXISTS biblioteca (fecha_hora TEXT, ocupacion INT)")
 	#Guardamos cambios en la base de datos
@@ -131,15 +119,11 @@ def run():
 
 		frame = frame[1] if args.get("input", False) else frame
 
-		# if we are viewing a video and we did not grab a frame then we
-		# have reached the end of the video
-		if args["input"] is not None and frame is None:
-			break
-
 		# resize the frame to have a maximum width of 500 pixels (the
 		# less data we have, the faster we can process it), then convert
 		# the frame from BGR to RGB for dlib
-		frame = imutils.resize(frame, width = 500)
+		frame = imutils.resize(frame, width = frame_size)
+		frame = frame[pixel_start_height:pixel_end_height, pixel_start_width:pixel_end_width]
 		rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
 		# if the frame dimensions are empty, set them
@@ -224,7 +208,7 @@ def run():
 		# draw a horizontal line in the center of the frame -- once an
 		# object crosses this line we will determine whether they were
 		# moving 'up' or 'down'
-		cv2.line(frame, (0, H // 2), (W, H // 2), (0, 0, 0), 3)
+		cv2.line(frame, (0, line_position), (W, line_position), line_color, line_thickness)
 		cv2.putText(frame, "-Prediction border - Entrance-", (10, H - ((i * 20) + 200)),
 			cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
 
@@ -255,31 +239,51 @@ def run():
 
 				# check to see if the object has been counted or not
 				if not to.counted:
-					# if the direction is negative (indicating the object
-					# is moving up) AND the centroid is above the center
-					# line, count the object
-					if direction < 0 and centroid[1] < H // 2:
-						totalUp += 1
-						empty.append(totalUp)
-						to.counted = True
+					if downIsEntry == 1:
+						# if the direction is negative (indicating the object
+						# is moving up) AND the centroid is above the center
+						# line, count the object
+						if direction < 0 and centroid[1] < line_position:
+							totalUp += 1
+							empty.append(totalUp)
+							to.counted = True
 
-					# if the direction is positive (indicating the object
-					# is moving down) AND the centroid is below the
-					# center line, count the object
-					elif direction > 0 and centroid[1] > H // 2:
-						totalDown += 1
-						empty1.append(totalDown)
-						#print(empty1[-1])
-						# if the people limit exceeds over threshold, send an email alert
-						if sum(x) >= config.Threshold:
-							cv2.putText(frame, "-ALERT: People limit exceeded-", (10, frame.shape[0] - 80),
-								cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255), 2)
-							if config.ALERT:
-								print("[INFO] Sending email alert..")
-								Mailer().send(config.MAIL)
-								print("[INFO] Alert sent")
+						# if the direction is positive (indicating the object
+						# is moving down) AND the centroid is below the
+						# center line, count the object
+						elif direction > 0 and centroid[1] > line_position:
+							totalDown += 1
+							empty1.append(totalDown)
+							#print(empty1[-1])
+							# if the people limit exceeds over threshold, send an email alert
+							if sum(x) >= config.Threshold:
+								cv2.putText(frame, "-ALERT: People limit exceeded-", (10, frame.shape[0] - 80),
+									cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255), 2)
+								if config.ALERT:
+									print("[INFO] Sending email alert..")
+									Mailer().send(config.MAIL)
+									print("[INFO] Alert sent")
 
-						to.counted = True
+							to.counted = True
+					else:
+						if direction < 0 and centroid[1] < line_position:
+							totalDown += 1
+							empty.append(totalDown)
+							to.counted = True
+
+						
+						elif direction > 0 and centroid[1] > line_position:
+							totalUp += 1
+							empty1.append(totalUp)
+							if sum(x) >= config.Threshold:
+								cv2.putText(frame, "-ALERT: People limit exceeded-", (10, frame.shape[0] - 80),
+									cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255), 2)
+								if config.ALERT:
+									print("[INFO] Sending email alert..")
+									Mailer().send(config.MAIL)
+									print("[INFO] Alert sent")
+
+							to.counted = True
 						
 					x = []
 					# compute the sum of total people inside
