@@ -119,8 +119,8 @@ if Timer:
 - Centroid tracker: https://www.pyimagesearch.com/2018/07/23/simple-object-tracking-with-opencv/
 
 ***Optional:***
-- https://towardsdatascience.com/review-ssd-single-shot-detector-object-detection-851a94607d11
-- https://pypi.org/project/schedule/
+- SSD: https://towardsdatascience.com/review-ssd-single-shot-detector-object-detection-851a94607d11
+- Schedule: https://pypi.org/project/schedule/
 
 ## Next steps
 - Train the SSD on human data (with a top-down view).

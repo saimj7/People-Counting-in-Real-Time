@@ -4,16 +4,24 @@ from imutils.video import VideoStream
 from imutils.video import FPS
 from mylib.mailer import Mailer
 from mylib import config, thread
-import time, schedule, csv
-import numpy as np
-import argparse, imutils
-import time, dlib, cv2, datetime
 from itertools import zip_longest
+import time
+import schedule
+import csv
+import numpy as np
+import threading
+import argparse
+import imutils
+import dlib
+import cv2
+import datetime
 
 t0 = time.time()
 
-def run():
+def send_mail():
+	Mailer().send(config.MAIL)
 
+def people_counter():
 	# construct the argument parse and parse the arguments
 	ap = argparse.ArgumentParser()
 	ap.add_argument("-p", "--prototxt", required=False,
@@ -72,9 +80,9 @@ def run():
 	totalFrames = 0
 	totalDown = 0
 	totalUp = 0
-	x = []
-	empty=[]
-	empty1=[]
+	total = []
+	move_out=[]
+	move_in=[]
 
 	# start the frames per second throughput estimator
 	fps = FPS().start()
@@ -152,7 +160,6 @@ def run():
 					box = detections[0, 0, i, 3:7] * np.array([W, H, W, H])
 					(startX, startY, endX, endY) = box.astype("int")
 
-
 					# construct a dlib rectangle object from the bounding
 					# box coordinates and then start the dlib correlation
 					# tracker
@@ -225,7 +232,7 @@ def run():
 					# line, count the object
 					if direction < 0 and centroid[1] < H // 2:
 						totalUp += 1
-						empty.append(totalUp)
+						move_out.append(totalUp)
 						to.counted = True
 
 					# if the direction is positive (indicating the object
@@ -233,24 +240,22 @@ def run():
 					# center line, count the object
 					elif direction > 0 and centroid[1] > H // 2:
 						totalDown += 1
-						empty1.append(totalDown)
-						#print(empty1[-1])
+						move_in.append(totalDown)
 						# if the people limit exceeds over threshold, send an email alert
-						if sum(x) >= config.Threshold:
+						if sum(total) >= config.Threshold:
 							cv2.putText(frame, "-ALERT: People limit exceeded-", (10, frame.shape[0] - 80),
 								cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255), 2)
 							if config.ALERT:
 								print("[INFO] Sending email alert..")
-								Mailer().send(config.MAIL)
+								email_thread = threading.Thread(target = send_mail)
+								email_thread.daemon = True
+								email_thread.start()
 								print("[INFO] Alert sent")
-
 						to.counted = True
-						
-					x = []
-					# compute the sum of total people inside
-					x.append(len(empty1)-len(empty))
-					#print("Total people inside:", x)
 
+					total = []
+					# compute the sum of total people inside
+					total.append(len(move_in)-len(move_out))
 
 			# store the trackable object in our dictionary
 			trackableObjects[objectID] = to
@@ -262,32 +267,31 @@ def run():
 				cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 			cv2.circle(frame, (centroid[0], centroid[1]), 4, (255, 255, 255), -1)
 
-		# construct a tuple of information we will be displaying on the
-		info = [
+		# construct a tuple of information we will be displaying on the frame
+		info_status = [
 		("Exit", totalUp),
 		("Enter", totalDown),
 		("Status", status),
 		]
 
-		info2 = [
-		("Total people inside", x),
+		info_total = [
+		("Total people inside", ', '.join(map(str, total))),
 		]
 
-                # Display the output
-		for (i, (k, v)) in enumerate(info):
+		# display the output
+		for (i, (k, v)) in enumerate(info_status):
 			text = "{}: {}".format(k, v)
 			cv2.putText(frame, text, (10, H - ((i * 20) + 20)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 2)
 
-		for (i, (k, v)) in enumerate(info2):
+		for (i, (k, v)) in enumerate(info_total):
 			text = "{}: {}".format(k, v)
 			cv2.putText(frame, text, (265, H - ((i * 20) + 60)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
-		# Initiate a simple log to save data at end of the day
+		# initiate a simple log to save data at end of the day
 		if config.Log:
 			datetimee = [datetime.datetime.now()]
-			d = [datetimee, empty1, empty, x]
+			d = [datetimee, move_in, move_out, total]
 			export_data = zip_longest(*d, fillvalue = '')
-
 			with open('Log.csv', 'w', newline='') as myfile:
 				wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
 				wr.writerow(("End Time", "In", "Out", "Total Inside"))
@@ -300,18 +304,17 @@ def run():
 		# show the output frame
 		cv2.imshow("Real-Time Monitoring/Analysis Window", frame)
 		key = cv2.waitKey(1) & 0xFF
-
 		# if the `q` key was pressed, break from the loop
 		if key == ord("q"):
 			break
-
 		# increment the total number of frames processed thus far and
 		# then update the FPS counter
 		totalFrames += 1
 		fps.update()
 
+		# initiate the timer
 		if config.Timer:
-			# Automatic timer to stop the live stream. Set to 8 hours (28800s).
+			# automatic timer to stop the live stream (set to 8 hours/28800s).
 			t1 = time.time()
 			num_seconds=(t1-t0)
 			if num_seconds > 28800:
@@ -322,15 +325,6 @@ def run():
 	print("[INFO] elapsed time: {:.2f}".format(fps.elapsed()))
 	print("[INFO] approx. FPS: {:.2f}".format(fps.fps()))
 
-
-	# # if we are not using a video file, stop the camera video stream
-	# if not args.get("input", False):
-	# 	vs.stop()
-	#
-	# # otherwise, release the video file pointer
-	# else:
-	# 	vs.release()
-	
 	# issue 15
 	if config.Thread:
 		vs.release()
@@ -338,16 +332,11 @@ def run():
 	# close any open windows
 	cv2.destroyAllWindows()
 
-
-##learn more about different schedules here: https://pypi.org/project/schedule/
+# initiate the scheduler
 if config.Scheduler:
-	##Runs for every 1 second
-	#schedule.every(1).seconds.do(run)
-	##Runs at every day (09:00 am). You can change it.
-	schedule.every().day.at("09:00").do(run)
-
+	# runs at every day (09:00 am)
+	schedule.every().day.at("09:00").do(people_counter)
 	while 1:
 		schedule.run_pending()
-
 else:
-	run()
+	people_counter()
