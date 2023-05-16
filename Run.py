@@ -294,9 +294,10 @@ def people_counter():
 			export_data = zip_longest(*d, fillvalue = '')
 			with open('Log.csv', 'w', newline='') as myfile:
 				wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
-				wr.writerow(("End Time", "In", "Out", "Total Inside"))
-				wr.writerows(export_data)
-				
+				if myfile.tell() == 0: # check if header rows are already existing
+					wr.writerow(("End Time", "In", "Out", "Total Inside"))
+					wr.writerows(export_data)
+
 		# check to see if we should write the frame to disk
 		if writer is not None:
 			writer.write(frame)
