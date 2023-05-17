@@ -1,12 +1,9 @@
-#===============================================================================
-""" Optional features config. """
-#===============================================================================
-# Enter mail below to receive real-time email alerts
-# e.g., 'email@gmail.com'
+""" Features configuration """
+
+# Enter mail below to receive real-time email e.g., 'email@gmail.com'
 MAIL = ''
 # Enter the ip camera url (e.g., url = 'http://191.138.0.100:8040/video')
 url = ''
-
 # ON/OFF for mail feature. Enter True to turn on the email alert feature.
 ALERT = False
 # Set max. people inside limit. Optimise number below: 10, 50, 100, etc.
@@ -19,5 +16,3 @@ Log = False
 Scheduler = False
 # Auto stop the software after certain a time/hours
 Timer = False
-#===============================================================================
-#===============================================================================

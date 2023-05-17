@@ -1,9 +1,10 @@
-from mylib.centroidtracker import CentroidTracker
-from mylib.trackableobject import TrackableObject
+from tracker.centroidtracker import CentroidTracker
+from tracker.trackableobject import TrackableObject
 from imutils.video import VideoStream
 from imutils.video import FPS
-from mylib.mailer import Mailer
-from mylib import config, thread
+from utils.mailer import Mailer
+from utils import config
+from utils import thread
 from itertools import zip_longest
 import time
 import schedule
@@ -292,7 +293,7 @@ def people_counter():
 			datetimee = [datetime.datetime.now()]
 			d = [datetimee, move_in, move_out, total]
 			export_data = zip_longest(*d, fillvalue = '')
-			with open('Log.csv', 'w', newline='') as myfile:
+			with open('utils/data/logs/counting_data.csv', 'w', newline='') as myfile:
 				wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
 				if myfile.tell() == 0: # check if header rows are already existing
 					wr.writerow(("End Time", "In", "Out", "Total Inside"))
