@@ -1,47 +1,72 @@
 from tracker.centroidtracker import CentroidTracker
 from tracker.trackableobject import TrackableObject
 from imutils.video import VideoStream
-from imutils.video import FPS
+from itertools import zip_longest
 from utils.mailer import Mailer
+from imutils.video import FPS
 from utils import config
 from utils import thread
-from itertools import zip_longest
-import time
-import schedule
-import csv
 import numpy as np
 import threading
 import argparse
-import imutils
-import dlib
-import cv2
 import datetime
+import schedule
+import imutils
+import time
+import dlib
+import csv
+import cv2
 
-t0 = time.time()
+# execution start time
+start_time = time.time()
+
+def parse_arguments():
+	# function to parse the arguments
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-p", "--prototxt", required=False,
+        help="path to Caffe 'deploy' prototxt file")
+    ap.add_argument("-m", "--model", required=True,
+        help="path to Caffe pre-trained model")
+    ap.add_argument("-i", "--input", type=str,
+        help="path to optional input video file")
+    ap.add_argument("-o", "--output", type=str,
+        help="path to optional output video file")
+    # confidence default 0.4
+    ap.add_argument("-c", "--confidence", type=float, default=0.4,
+        help="minimum probability to filter weak detections")
+    ap.add_argument("-s", "--skip-frames", type=int, default=30,
+        help="# of skip frames between detections")
+    args = vars(ap.parse_args())
+    return args
 
 def send_mail():
+	# function to send the email alerts
 	Mailer().send(config.MAIL)
 
-def people_counter():
-	# construct the argument parse and parse the arguments
-	ap = argparse.ArgumentParser()
-	ap.add_argument("-p", "--prototxt", required=False,
-		help="path to Caffe 'deploy' prototxt file")
-	ap.add_argument("-m", "--model", required=True,
-		help="path to Caffe pre-trained model")
-	ap.add_argument("-i", "--input", type=str,
-		help="path to optional input video file")
-	ap.add_argument("-o", "--output", type=str,
-		help="path to optional output video file")
-	# confidence default 0.4
-	ap.add_argument("-c", "--confidence", type=float, default=0.4,
-		help="minimum probability to filter weak detections")
-	ap.add_argument("-s", "--skip-frames", type=int, default=30,
-		help="# of skip frames between detections")
-	args = vars(ap.parse_args())
+def log_data(move_in, move_out):
+	# function to log the counting data
+	log_time = [datetime.datetime.now()]
+	data = [log_time, move_in, move_out]
 
-	# initialize the list of class labels MobileNet SSD was trained to
-	# detect
+	# to avoid overlapping of data,
+	# create a new list with empty columns inserted between each column
+	format_data = []
+	for col in data:
+		format_data.append(col)
+		format_data.append([''] * len(col))
+	# transpose the data to align the columns properly
+	export_data = zip_longest(*format_data, fillvalue = '')
+
+	with open('utils/data/logs/counting_data.csv', 'w', newline = '') as myfile:
+		wr = csv.writer(myfile, quoting = csv.QUOTE_ALL)
+		if myfile.tell() == 0: # check if header rows are already existing
+			wr.writerow(("Log Time", "", "(Move In, Time)", "", "(Move Out, Time)"))
+			wr.writerows(export_data)
+
+def people_counter():
+	# main function for people_counter.py
+	args = parse_arguments()
+	# initialize the list of class labels MobileNet SSD was trained to detect
 	CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
 		"bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
 		"dog", "horse", "motorbike", "person", "pottedplant", "sheep",
@@ -82,8 +107,8 @@ def people_counter():
 	totalDown = 0
 	totalUp = 0
 	total = []
-	move_out=[]
-	move_in=[]
+	move_out = []
+	move_in =[]
 
 	# start the frames per second throughput estimator
 	fps = FPS().start()
@@ -233,7 +258,8 @@ def people_counter():
 					# line, count the object
 					if direction < 0 and centroid[1] < H // 2:
 						totalUp += 1
-						move_out.append(totalUp)
+						date_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+						move_out.append((totalUp, date_time))
 						to.counted = True
 
 					# if the direction is positive (indicating the object
@@ -241,7 +267,8 @@ def people_counter():
 					# center line, count the object
 					elif direction > 0 and centroid[1] > H // 2:
 						totalDown += 1
-						move_in.append(totalDown)
+						date_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+						move_in.append((totalDown, date_time))
 						# if the people limit exceeds over threshold, send an email alert
 						if sum(total) >= config.Threshold:
 							cv2.putText(frame, "-ALERT: People limit exceeded-", (10, frame.shape[0] - 80),
@@ -251,12 +278,11 @@ def people_counter():
 								email_thread = threading.Thread(target = send_mail)
 								email_thread.daemon = True
 								email_thread.start()
-								print("[INFO] Alert sent")
+								print("[INFO] Alert sent!")
 						to.counted = True
-
-					total = []
-					# compute the sum of total people inside
-					total.append(len(move_in)-len(move_out))
+						# compute the sum of total people inside
+						total = []
+						total.append(len(move_in) - len(move_out))
 
 			# store the trackable object in our dictionary
 			trackableObjects[objectID] = to
@@ -288,16 +314,9 @@ def people_counter():
 			text = "{}: {}".format(k, v)
 			cv2.putText(frame, text, (265, H - ((i * 20) + 60)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
-		# initiate a simple log to save data at end of the day
+		# initiate a simple log to save the counting data
 		if config.Log:
-			datetimee = [datetime.datetime.now()]
-			d = [datetimee, move_in, move_out, total]
-			export_data = zip_longest(*d, fillvalue = '')
-			with open('utils/data/logs/counting_data.csv', 'w', newline='') as myfile:
-				wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
-				if myfile.tell() == 0: # check if header rows are already existing
-					wr.writerow(("End Time", "In", "Out", "Total Inside"))
-					wr.writerows(export_data)
+			log_data(move_in, move_out)
 
 		# check to see if we should write the frame to disk
 		if writer is not None:
@@ -316,9 +335,9 @@ def people_counter():
 
 		# initiate the timer
 		if config.Timer:
-			# automatic timer to stop the live stream (set to 8 hours/28800s).
-			t1 = time.time()
-			num_seconds=(t1-t0)
+			# automatic timer to stop the live stream (set to 8 hours/28800s)
+			end_time = time.time()
+			num_seconds = (end_time - start_time)
 			if num_seconds > 28800:
 				break
 
@@ -327,7 +346,7 @@ def people_counter():
 	print("[INFO] elapsed time: {:.2f}".format(fps.elapsed()))
 	print("[INFO] approx. FPS: {:.2f}".format(fps.fps()))
 
-	# issue 15
+	# release the camera device/resource (issue 15)
 	if config.Thread:
 		vs.release()
 
@@ -338,7 +357,7 @@ def people_counter():
 if config.Scheduler:
 	# runs at every day (09:00 am)
 	schedule.every().day.at("09:00").do(people_counter)
-	while 1:
+	while True:
 		schedule.run_pending()
 else:
 	people_counter()

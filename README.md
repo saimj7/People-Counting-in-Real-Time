@@ -134,12 +134,11 @@ schedule.every().day.at("9:00").do(run)
 - All you have to do is set your desired time and run the script.
 
 ```
-if Timer:
-	# Automatic timer to stop the live stream. Set to 8 hours (28800s).
-	t1 = time.time()
-	num_seconds=(t1-t0)
-	if num_seconds > 28800:
-		break
+# automatic timer to stop the live stream (set to 8 hours/28800s)
+end_time = time.time()
+num_seconds = (end_time - start_time)
+if num_seconds > 28800:
+    break
 ```
 
 ### Simple log
