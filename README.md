@@ -62,7 +62,7 @@ People Counting in Real-Time using live video stream/IP camera in OpenCV.
 First up, install all the required Python dependencies by running: ```
 pip install -r requirements.txt ```
 
-> Note that there can always be version conflicts between the dependencies themselves and other factors like OS, hardware etc.
+> NOTE: Supported Python version is 3.11.3 (there can always be version conflicts between the dependencies, OS, hardware etc.).
 
 ### Test video file
 
@@ -108,7 +108,7 @@ The following features can be easily enabled/disabled in ```utils/config.py```:
 - This is quite useful considering scenarios similar to COVID-19. 
 <img src="https://imgur.com/35Yf1SR.png" width=350>
 
-- Note: To setup the sender email, please refer the instructions inside ```utils/mailer.py```. Setup receiver email in the config.
+> NOTE: To setup the sender email, please refer the instructions inside ```utils/mailer.py```. Setup receiver email in the config.
 
 ### Threading
 
