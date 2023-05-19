@@ -1,0 +1,12 @@
+{
+    "Email_Send": "",
+    "Email_Receive": "",
+    "Email_Password": "",
+    "url": "",
+    "ALERT": false,
+    "Threshold": 10,
+    "Thread": false,
+    "Log": false,
+    "Scheduler": false,
+    "Timer": false
+}

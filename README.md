@@ -66,7 +66,7 @@ pip install -r requirements.txt ```
 
 ### Test video file
 
-To run inference on a test video file, head into the directory/use the command: 
+To run inference on a test video file, head into the root directory and run the command: 
 
 ```
 python people_counter.py --prototxt detector/MobileNetSSD_deploy.prototxt --model detector/MobileNetSSD_deploy.caffemodel --input utils/data/tests/test_1.mp4
@@ -74,7 +74,7 @@ python people_counter.py --prototxt detector/MobileNetSSD_deploy.prototxt --mode
 
 ### Webcam
 
-To run inference on a webcam, set ```url = 0``` in ```utils/config.py``` and run the command:
+To run on a webcam, set ```"url": 0``` in ```utils/config.json``` and run the command:
 
 ```
 python people_counter.py --prototxt detector/MobileNetSSD_deploy.prototxt --model detector/MobileNetSSD_deploy.caffemodel
@@ -82,12 +82,8 @@ python people_counter.py --prototxt detector/MobileNetSSD_deploy.prototxt --mode
 
 ### IP camera
 
-To run inference on an IP camera, setup your camera url in ```utils/config.py```:
+To run on an IP camera, setup your camera url in ```utils/config.json```, e.g., ```"url": 'http://191.138.0.100:8040/video'```.
 
-```
-# Enter the ip camera url (e.g., url = 'http://191.138.0.100:8040/video')
-url = ''
-```
 Then run the command:
 ```
 python people_counter.py --prototxt detector/MobileNetSSD_deploy.prototxt --model detector/MobileNetSSD_deploy.caffemodel
@@ -97,25 +93,50 @@ python people_counter.py --prototxt detector/MobileNetSSD_deploy.prototxt --mode
 
 ## Features
 
-The following features can be easily enabled/disabled in ```utils/config.py```:
+The following features can be easily enabled/disabled in ```utils/config.json```:
 
-<img src="https://imgur.com/Lr8mdUW.png" width=500>
+```json
+{
+    "Email_Send": "",
+    "Email_Receive": "",
+    "Email_Password": "",
+    "url": "",
+    "ALERT": false,
+    "Threshold": 10,
+    "Thread": false,
+    "Log": false,
+    "Scheduler": false,
+    "Timer": false
+}
+```
 
 ### Real-Time alert
 
-- If selected, we send an email alert in real-time. Example use case: If the total number of people (say 10 or 30) are exceeded in a store/building, we simply alert the staff. 
-- You can set the max. people limit in config. e.g., ``` Threshold = 10 ```.
-- This is quite useful considering scenarios similar to COVID-19. 
+If selected, we send an email alert in real-time. Example use case: If the total number of people (say 10 or 30) are exceeded in a store/building, we simply alert the staff. 
+
+- You can set the max. people limit in config, e.g., ```"Threshold": 10```.
+- This is quite useful considering scenarios similar to COVID-19. Below is an example:
 <img src="https://imgur.com/35Yf1SR.png" width=350>
 
-> NOTE: To setup the sender email, please refer the instructions inside ```utils/mailer.py```. Setup receiver email in the config.
+> ***1. Setup your emails:***
+
+In the config, setup your sender email ```"Email_Send": ""``` to send the alerts and your receiver email ```"Email_Receive": ""``` to receive the alerts.
+
+> ***2. Setup your password:***
+
+Similarly, setup the sender email password ```"Email_Password": ""```.
+
+Note that the password varies if you have secured 2 step verification turned on, so refer the links below and create an application specific password:
+
+- Google mail has a guide here: https://myaccount.google.com/lesssecureapps
+- For 2 step verified accounts: https://support.google.com/accounts/answer/185833
 
 ### Threading
 
 - Multi-Threading is implemented in ```utils/thread.py```. If you ever see a lag/delay in your real-time stream, consider using it.
 - Threading removes ```OpenCV's internal buffer``` (which basically stores the new frames yet to be processed until your system processes the old frames) and thus reduces the lag/increases fps.
 - If your system is not capable of simultaneously processing and outputting the result, you might see a delay in the stream. This is where threading comes into action.
-- It is most suitable to get solid performance on complex real-time applications. To use threading: set ``` Thread = True ``` in config.
+- It is most suitable to get solid performance on complex real-time applications. To use threading: set ```"Thread": true,``` in config.
 
 ### Scheduler
 
@@ -123,7 +144,7 @@ The following features can be easily enabled/disabled in ```utils/config.py```:
 - This is extremely useful in a business scenario, for instance, you could run the people counter only at your desired time (maybe 9-5?).
 - Variables and any cache/memory would be reset, thus, less load on your machine.
 
-```
+```python
 # runs at every day (09:00 am)
 schedule.every().day.at("9:00").do(run)
 ```
@@ -133,7 +154,7 @@ schedule.every().day.at("9:00").do(run)
 - Configure stopping the software execution after a certain time, e.g., 30 min or 8 hours (currently set) from now.
 - All you have to do is set your desired time and run the script.
 
-```
+```python
 # automatic timer to stop the live stream (set to 8 hours/28800s)
 end_time = time.time()
 num_seconds = (end_time - start_time)
@@ -144,7 +165,7 @@ if num_seconds > 28800:
 ### Simple log
 
 - Logs the counting data at end of the day.
-- Useful for footfall analysis.
+- Useful for footfall analysis. Below is an example:
 <img src="https://imgur.com/CV2nCjx.png" width=400>
 
 ---
@@ -164,4 +185,4 @@ if num_seconds > 28800:
 
 ---
 
-saimj7/ 19-08-2020 © <a href="http://saimj7.github.io" target="_blank">Sai_Mj</a>.
+*saimj7/ 19-08-2020 - © <a href="http://saimj7.github.io" target="_blank">Sai_Mj</a>.*

@@ -4,7 +4,6 @@ from imutils.video import VideoStream
 from itertools import zip_longest
 from utils.mailer import Mailer
 from imutils.video import FPS
-from utils import config
 from utils import thread
 import numpy as np
 import threading
@@ -15,6 +14,7 @@ import logging
 import imutils
 import time
 import dlib
+import json
 import csv
 import cv2
 
@@ -23,6 +23,9 @@ start_time = time.time()
 # setup logger
 logging.basicConfig(level = logging.INFO, format = "[INFO] %(message)s")
 logger = logging.getLogger(__name__)
+# initiate features config.
+with open("utils/config.json", "r") as file:
+    config = json.load(file)
 
 def parse_arguments():
 	# function to parse the arguments
@@ -45,7 +48,7 @@ def parse_arguments():
 
 def send_mail():
 	# function to send the email alerts
-	Mailer().send(config.MAIL)
+	Mailer().send(config["Email_Receive"])
 
 def log_data(move_in, move_out):
 	# function to log the counting data
@@ -82,7 +85,7 @@ def people_counter():
 	# if a video path was not supplied, grab a reference to the ip camera
 	if not args.get("input", False):
 		logger.info("Starting the live stream..")
-		vs = VideoStream(config.url).start()
+		vs = VideoStream(config["url"]).start()
 		time.sleep(2.0)
 
 	# otherwise, grab a reference to the video file
@@ -117,8 +120,8 @@ def people_counter():
 	# start the frames per second throughput estimator
 	fps = FPS().start()
 
-	if config.Thread:
-		vs = thread.ThreadingClass(config.url)
+	if config["Thread"]:
+		vs = thread.ThreadingClass(config["url"])
 
 	# loop over frames from the video stream
 	while True:
@@ -274,10 +277,10 @@ def people_counter():
 						date_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 						move_in.append((totalDown, date_time))
 						# if the people limit exceeds over threshold, send an email alert
-						if sum(total) >= config.Threshold:
+						if sum(total) >= config["Threshold"]:
 							cv2.putText(frame, "-ALERT: People limit exceeded-", (10, frame.shape[0] - 80),
 								cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255), 2)
-							if config.ALERT:
+							if config["ALERT"]:
 								logger.info("Sending email alert..")
 								email_thread = threading.Thread(target = send_mail)
 								email_thread.daemon = True
@@ -319,7 +322,7 @@ def people_counter():
 			cv2.putText(frame, text, (265, H - ((i * 20) + 60)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
 		# initiate a simple log to save the counting data
-		if config.Log:
+		if config["Log"]:
 			log_data(move_in, move_out)
 
 		# check to see if we should write the frame to disk
@@ -338,7 +341,7 @@ def people_counter():
 		fps.update()
 
 		# initiate the timer
-		if config.Timer:
+		if config["Timer"]:
 			# automatic timer to stop the live stream (set to 8 hours/28800s)
 			end_time = time.time()
 			num_seconds = (end_time - start_time)
@@ -351,14 +354,14 @@ def people_counter():
 	logger.info("Approx. FPS: {:.2f}".format(fps.fps()))
 
 	# release the camera device/resource (issue 15)
-	if config.Thread:
+	if config["Thread"]:
 		vs.release()
 
 	# close any open windows
 	cv2.destroyAllWindows()
 
 # initiate the scheduler
-if config.Scheduler:
+if config["Scheduler"]:
 	# runs at every day (09:00 am)
 	schedule.every().day.at("09:00").do(people_counter)
 	while True:
