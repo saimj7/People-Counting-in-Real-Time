@@ -11,6 +11,7 @@ import threading
 import argparse
 import datetime
 import schedule
+import logging
 import imutils
 import time
 import dlib
@@ -19,6 +20,9 @@ import cv2
 
 # execution start time
 start_time = time.time()
+# setup logger
+logging.basicConfig(level = logging.INFO, format = "[INFO] %(message)s")
+logger = logging.getLogger(__name__)
 
 def parse_arguments():
 	# function to parse the arguments
@@ -77,13 +81,13 @@ def people_counter():
 
 	# if a video path was not supplied, grab a reference to the ip camera
 	if not args.get("input", False):
-		print("[INFO] Starting the live stream..")
+		logger.info("Starting the live stream..")
 		vs = VideoStream(config.url).start()
 		time.sleep(2.0)
 
 	# otherwise, grab a reference to the video file
 	else:
-		print("[INFO] Starting the video..")
+		logger.info("Starting the video..")
 		vs = cv2.VideoCapture(args["input"])
 
 	# initialize the video writer (we'll instantiate later if need be)
@@ -274,11 +278,11 @@ def people_counter():
 							cv2.putText(frame, "-ALERT: People limit exceeded-", (10, frame.shape[0] - 80),
 								cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255), 2)
 							if config.ALERT:
-								print("[INFO] Sending email alert..")
+								logger.info("Sending email alert..")
 								email_thread = threading.Thread(target = send_mail)
 								email_thread.daemon = True
 								email_thread.start()
-								print("[INFO] Alert sent!")
+								logger.info("Alert sent!")
 						to.counted = True
 						# compute the sum of total people inside
 						total = []
@@ -343,8 +347,8 @@ def people_counter():
 
 	# stop the timer and display FPS information
 	fps.stop()
-	print("[INFO] elapsed time: {:.2f}".format(fps.elapsed()))
-	print("[INFO] approx. FPS: {:.2f}".format(fps.fps()))
+	logger.info("Elapsed time: {:.2f}".format(fps.elapsed()))
+	logger.info("Approx. FPS: {:.2f}".format(fps.fps()))
 
 	# release the camera device/resource (issue 15)
 	if config.Thread:
