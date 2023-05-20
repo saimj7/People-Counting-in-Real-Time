@@ -50,24 +50,16 @@ def send_mail():
 	# function to send the email alerts
 	Mailer().send(config["Email_Receive"])
 
-def log_data(move_in, move_out):
+def log_data(move_in, in_time, move_out, out_time):
 	# function to log the counting data
-	log_time = [datetime.datetime.now()]
-	data = [log_time, move_in, move_out]
-
-	# to avoid overlapping of data,
-	# create a new list with empty columns inserted between each column
-	format_data = []
-	for col in data:
-		format_data.append(col)
-		format_data.append([''] * len(col))
+	data = [move_in, in_time, move_out, out_time]
 	# transpose the data to align the columns properly
-	export_data = zip_longest(*format_data, fillvalue = '')
+	export_data = zip_longest(*data, fillvalue = '')
 
 	with open('utils/data/logs/counting_data.csv', 'w', newline = '') as myfile:
 		wr = csv.writer(myfile, quoting = csv.QUOTE_ALL)
 		if myfile.tell() == 0: # check if header rows are already existing
-			wr.writerow(("Log Time", "", "(Move In, Time)", "", "(Move Out, Time)"))
+			wr.writerow(("Move In", "In Time", "Move Out", "Out Time"))
 			wr.writerows(export_data)
 
 def people_counter():
@@ -113,9 +105,12 @@ def people_counter():
 	totalFrames = 0
 	totalDown = 0
 	totalUp = 0
+	# initialize empty lists to store the counting data
 	total = []
 	move_out = []
 	move_in =[]
+	out_time = []
+	in_time = []
 
 	# start the frames per second throughput estimator
 	fps = FPS().start()
@@ -266,7 +261,8 @@ def people_counter():
 					if direction < 0 and centroid[1] < H // 2:
 						totalUp += 1
 						date_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-						move_out.append((totalUp, date_time))
+						move_out.append(totalUp)
+						out_time.append(date_time)
 						to.counted = True
 
 					# if the direction is positive (indicating the object
@@ -275,7 +271,8 @@ def people_counter():
 					elif direction > 0 and centroid[1] > H // 2:
 						totalDown += 1
 						date_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-						move_in.append((totalDown, date_time))
+						move_in.append(totalDown)
+						in_time.append(date_time)
 						# if the people limit exceeds over threshold, send an email alert
 						if sum(total) >= config["Threshold"]:
 							cv2.putText(frame, "-ALERT: People limit exceeded-", (10, frame.shape[0] - 80),
@@ -323,7 +320,7 @@ def people_counter():
 
 		# initiate a simple log to save the counting data
 		if config["Log"]:
-			log_data(move_in, move_out)
+			log_data(move_in, in_time, move_out, out_time)
 
 		# check to see if we should write the frame to disk
 		if writer is not None:
