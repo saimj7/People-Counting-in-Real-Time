@@ -17,6 +17,8 @@ import dlib
 import json
 import csv
 import cv2
+import requests
+
 
 # execution start time
 start_time = time.time()
@@ -83,7 +85,7 @@ def people_counter():
 	# otherwise, grab a reference to the video file
 	else:
 		logger.info("Starting the video..")
-		vs = cv2.VideoCapture(args["input"])
+		vs = cv2.VideoCapture(0)
 
 	# initialize the video writer (we'll instantiate later if need be)
 	writer = None
@@ -111,6 +113,8 @@ def people_counter():
 	move_in =[]
 	out_time = []
 	in_time = []
+	in_pic = 0
+	last_in_pic_sent = 0
 
 	# start the frames per second throughput estimator
 	fps = FPS().start()
@@ -118,6 +122,93 @@ def people_counter():
 	if config["Thread"]:
 		vs = thread.ThreadingClass(config["url"])
 
+	frequency_measurement(vs)
+
+	# people_counter_opencv_loop(CLASSES, H, W, args, ct, fps, in_pic, in_time, last_in_pic_sent,
+	# 						   move_in, move_out, net, out_time, total, totalDown, totalFrames,
+	# 						   totalUp, trackableObjects, trackers, vs, writer)
+
+	# stop the timer and display FPS information
+	fps.stop()
+	logger.info("Elapsed time: {:.2f}".format(fps.elapsed()))
+	logger.info("Approx. FPS: {:.2f}".format(fps.fps()))
+
+	# release the camera device/resource (issue 15)
+	if config["Thread"]:
+		vs.release()
+
+	# close any open windows
+	cv2.destroyAllWindows()
+
+def frequency_measurement(vs):
+	frame_diffs = [0] * 300
+	frame_count = 0
+	prev_frame = None
+
+	while True:
+		# Read the next frame
+		ret, frame = vs.read()
+
+		if ret:
+			# Resize the frame
+			frame = cv2.resize(frame, (640, 480))
+
+			# Convert to grayscale
+			gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+			# Blur the frame to reduce noise
+			gray = cv2.GaussianBlur(gray, (21, 21), 0)
+
+			# If this is the first frame, save it for future frame difference
+			if prev_frame is None:
+				prev_frame = gray
+				continue
+
+			# Calculate the absolute difference between current frame and previous frame
+			frame_delta = cv2.absdiff(prev_frame, gray)
+
+			# Apply a binary threshold. All pixel intensities above 30 are set to 255.
+			thresh = cv2.threshold(frame_delta, 30, 255, cv2.THRESH_BINARY)[1]
+
+			# Compute the number of white pixels in the thresholded image
+			num_white_pixels = int(np.sum(thresh == 255))
+			# print("-" * (num_white_pixels // 100))
+
+			frame_diffs.append(num_white_pixels)
+
+			def dominant_frequency(data):
+				fft_result = np.fft.fft(data)  # Compute FFT
+				frequencies = np.fft.fftfreq(len(data), 1 / 24)  # Compute frequency bins
+				spectrum = np.abs(fft_result)  # Take absolute value to get the spectrum
+
+				# Get the index of the max frequency (ignore DC component at index 0)
+				dominant_freq_index = np.argmax(spectrum[1:]) + 1
+
+				bpm = abs(frequencies[dominant_freq_index]) * 60
+				return bpm# Return the dominant frequency
+			frame_diffs_30 = frame_diffs[-300:]
+			# print(frame_diffs_30)
+			d = dominant_frequency(frame_diffs_30)
+
+			# print(frame_diffs)
+			frame_count += 1
+
+			# Display the resulting frame
+			cv2.imshow("Frame", frame)
+			cv2.imshow("Delta", frame_delta)
+			cv2.imshow("Thresh", thresh)
+			# Inside the Thresh window, show the frequncies of the currently playing song, similar to Winamp's EQ
+
+			# Update the previous frame
+			prev_frame = gray
+
+		# Quit if 'q' is pressed
+		if cv2.waitKey(1) & 0xFF == ord('q'):
+			break
+
+def people_counter_opencv_loop(CLASSES, H, W, args, ct, fps, in_pic, in_time, last_in_pic_sent,
+							   move_in, move_out, net, out_time, total, totalDown, totalFrames,
+							   totalUp, trackableObjects, trackers, vs, writer):
 	# loop over frames from the video stream
 	while True:
 		# grab the next frame and handle if we are reading from either
@@ -133,7 +224,7 @@ def people_counter():
 		# resize the frame to have a maximum width of 500 pixels (the
 		# less data we have, the faster we can process it), then convert
 		# the frame from BGR to RGB for dlib
-		frame = imutils.resize(frame, width = 500)
+		frame = imutils.resize(frame, width=500)
 		rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
 		# if the frame dimensions are empty, set them
@@ -145,7 +236,7 @@ def people_counter():
 		if args["output"] is not None and writer is None:
 			fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 			writer = cv2.VideoWriter(args["output"], fourcc, 30,
-				(W, H), True)
+									 (W, H), True)
 
 		# initialize the current status along with our list of bounding
 		# box rectangles returned by either (1) our object detector or
@@ -165,6 +256,9 @@ def people_counter():
 			blob = cv2.dnn.blobFromImage(frame, 0.007843, (W, H), 127.5)
 			net.setInput(blob)
 			detections = net.forward()
+			cv2.putText(frame, f"Mashu: {in_pic}", (10, H - (20 + 200)),
+						cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+			in_pic = 0
 
 			# loop over the detections
 			for i in np.arange(0, detections.shape[2]):
@@ -182,26 +276,67 @@ def people_counter():
 					# if the class label is not a person, ignore it
 					if CLASSES[idx] != "person":
 						continue
+					in_pic += 1
 
-					# compute the (x, y)-coordinates of the bounding box
-					# for the object
-					box = detections[0, 0, i, 3:7] * np.array([W, H, W, H])
-					(startX, startY, endX, endY) = box.astype("int")
+				print(f"Person detected: {in_pic}")
+				print(f"Last person detected: {last_in_pic_sent}")
+				if in_pic != last_in_pic_sent:
+					print("Sending request to server")
+					url = 'http://localhost:8000/execute'
 
-					# construct a dlib rectangle object from the bounding
-					# box coordinates and then start the dlib correlation
-					# tracker
-					tracker = dlib.correlation_tracker()
-					rect = dlib.rectangle(startX, startY, endX, endY)
-					tracker.start_track(rgb, rect)
+					headers = {
+						'Accept': '*/*',
+						'Accept-Language': 'en-GB,en;q=0.9,he-IL;q=0.8,he;q=0.7,en-US;q=0.6',
+						'Connection': 'keep-alive',
+						'Content-Type': 'application/json',
+						'DNT': '1',
+						'Origin': 'http://localhost:8000',
+						'Referer': 'http://localhost:8000/',
+						'Sec-Fetch-Dest': 'empty',
+						'Sec-Fetch-Mode': 'cors',
+						'Sec-Fetch-Site': 'same-origin',
+						'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+						'sec-ch-ua': '"Not/A)Brand";v="99", "Google Chrome";v="115", "Chromium";v="115"',
+						'sec-ch-ua-mobile': '?0',
+						'sec-ch-ua-platform': '"macOS"',
+					}
 
-					# add the tracker to our list of trackers so we can
-					# utilize it during skip frames
-					trackers.append(tracker)
+					# p = (1/((in_pic+1)**0.1))
+					data = {
+						"code": f"Pa * d('bd cp', p={.25})\n\n\n\r"
+					}
+
+					response = requests.post(url, headers=headers, data=json.dumps(data))
+					print(response)
+					print(response.text)
+					print(response.status_code)
+					last_in_pic_sent = in_pic
+
+				# compute the (x, y)-coordinates of the bounding box
+				# for the object
+				# box = detections[0, 0, i, 3:7] * np.array([W, H, W, H])
+				# (startX, startY, endX, endY) = box.astype("int")
+
+				# construct a dlib rectangle object from the bounding
+				# box coordinates and then start the dlib correlation
+				# tracker
+				# tracker = dlib.correlation_tracker()
+				# rect = dlib.rectangle(startX, startY, endX, endY)
+				# tracker.start_track(rgb, rect)
+
+				# add the tracker to our list of trackers so we can
+				# utilize it during skip frames
+				# trackers.append(tracker)
+
+		# cv2.putText(frame, f"In Pic: {in_pic}", (10, H - ((i * 20) + 200)),
+		# cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
 
 		# otherwise, we should utilize our object *trackers* rather than
 		# object *detectors* to obtain a higher frame processing throughput
 		else:
+			cv2.putText(frame, f"Mashu: {in_pic}", (10, H - (20 + 200)),
+						cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+
 			# loop over the trackers
 			for tracker in trackers:
 				# set the status of our system to be 'tracking' rather
@@ -224,9 +359,6 @@ def people_counter():
 		# draw a horizontal line in the center of the frame -- once an
 		# object crosses this line we will determine whether they were
 		# moving 'up' or 'down'
-		cv2.line(frame, (0, H // 2), (W, H // 2), (0, 0, 0), 3)
-		cv2.putText(frame, "-Prediction border - Entrance-", (10, H - ((i * 20) + 200)),
-			cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
 
 		# use the centroid tracker to associate the (1) old object
 		# centroids with (2) the newly computed object centroids
@@ -275,11 +407,12 @@ def people_counter():
 						in_time.append(date_time)
 						# if the people limit exceeds over threshold, send an email alert
 						if sum(total) >= config["Threshold"]:
-							cv2.putText(frame, "-ALERT: People limit exceeded-", (10, frame.shape[0] - 80),
-								cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255), 2)
+							cv2.putText(frame, "-ALERT: People limit exceeded-",
+										(10, frame.shape[0] - 80),
+										cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255), 2)
 							if config["ALERT"]:
 								logger.info("Sending email alert..")
-								email_thread = threading.Thread(target = send_mail)
+								email_thread = threading.Thread(target=send_mail)
 								email_thread.daemon = True
 								email_thread.start()
 								logger.info("Alert sent!")
@@ -295,28 +428,19 @@ def people_counter():
 			# object on the output frame
 			text = "ID {}".format(objectID)
 			cv2.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),
-				cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+						cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 			cv2.circle(frame, (centroid[0], centroid[1]), 4, (255, 255, 255), -1)
 
 		# construct a tuple of information we will be displaying on the frame
 		info_status = [
-		("Exit", totalUp),
-		("Enter", totalDown),
-		("Status", status),
+			("Exit", totalUp),
+			("Enter", totalDown),
+			("Status", status),
 		]
 
 		info_total = [
-		("Total people inside", ', '.join(map(str, total))),
+			("Total people inside", ', '.join(map(str, total))),
 		]
-
-		# display the output
-		for (i, (k, v)) in enumerate(info_status):
-			text = "{}: {}".format(k, v)
-			cv2.putText(frame, text, (10, H - ((i * 20) + 20)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 2)
-
-		for (i, (k, v)) in enumerate(info_total):
-			text = "{}: {}".format(k, v)
-			cv2.putText(frame, text, (265, H - ((i * 20) + 60)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
 		# initiate a simple log to save the counting data
 		if config["Log"]:
@@ -345,17 +469,6 @@ def people_counter():
 			if num_seconds > 28800:
 				break
 
-	# stop the timer and display FPS information
-	fps.stop()
-	logger.info("Elapsed time: {:.2f}".format(fps.elapsed()))
-	logger.info("Approx. FPS: {:.2f}".format(fps.fps()))
-
-	# release the camera device/resource (issue 15)
-	if config["Thread"]:
-		vs.release()
-
-	# close any open windows
-	cv2.destroyAllWindows()
 
 # initiate the scheduler
 if config["Scheduler"]:
