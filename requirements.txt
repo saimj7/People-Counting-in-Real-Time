@@ -6,3 +6,4 @@ dlib==19.24.1
 opencv-python==4.5.5.64
 scipy==1.10.1
 cmake==3.22.5
+requests
