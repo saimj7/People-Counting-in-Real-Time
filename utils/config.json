@@ -2,7 +2,7 @@
     "Email_Send": "",
     "Email_Receive": "",
     "Email_Password": "",
-    "url": "",
+    "url": "0",
     "ALERT": false,
     "Threshold": 10,
     "Thread": false,
