@@ -31,9 +31,13 @@ ALL_GENRES = {
     "World",
 }
 
+NO_ONE_HERE = (0, 10)
+LOW = (10, 75)
+MEDIUM = (75, 175)
+HIGH = (175, None)
 VOLUME_RANGE_TO_GENRE = {
-    (0, 10): {"Classical", "Piano", "Reggae"},
-    (10, 75): {
+    NO_ONE_HERE: {"Classical", "Piano", "Reggae"},
+    LOW: {
         "Ambient",
         "Country",
         "Piano",
@@ -43,7 +47,7 @@ VOLUME_RANGE_TO_GENRE = {
         "Folk & Singer-Songwriter",
         "World",
     },
-    (75, 175): {
+    MEDIUM: {
         "Latin",
         "Disco",
         "Dancehall",
@@ -61,7 +65,7 @@ VOLUME_RANGE_TO_GENRE = {
         "Alternative Rock",
     },
 }
-VOLUME_RANGE_TO_GENRE[(175, None)] = VOLUME_RANGE_TO_GENRE[(75, 175)].union({
+VOLUME_RANGE_TO_GENRE[HIGH] = VOLUME_RANGE_TO_GENRE[MEDIUM].union({
     "Dance & EDM",
     "Techno",
     "Trance",
@@ -74,7 +78,7 @@ def get_genres(volume: float) -> set:
     for rang, genres in VOLUME_RANGE_TO_GENRE.items():
         if rang[0] <= volume < rang[1]:
             return genres
-    return VOLUME_RANGE_TO_GENRE[(175, None)]
+    return VOLUME_RANGE_TO_GENRE[HIGH]
 
 
 def random_genre(volume: float):
