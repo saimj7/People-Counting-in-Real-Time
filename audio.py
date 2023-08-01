@@ -11,4 +11,6 @@ def main():
     with stream:
         while True:
             sd.sleep(1000)
-main()
+
+if __name__ == "__main__":
+    main()
