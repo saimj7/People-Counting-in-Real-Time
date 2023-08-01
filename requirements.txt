@@ -4,6 +4,7 @@ dlib==19.24.1
 imutils==0.5.4
 numpy==1.24.3
 opencv-python==4.5.5.64
+requests
 schedule==1.1.0
 scipy==1.10.1
 sounddevice
