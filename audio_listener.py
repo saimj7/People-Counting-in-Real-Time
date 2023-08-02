@@ -7,7 +7,7 @@ from time import time as now
 
 # Configuration options.
 SAMPLE_WINDOW_SIZE = 300  # How many audio frames to keep in the buffer for analysis.
-SECONDS_BETWEEN_UPDATES = 0.5  # How many seconds to wait before updating the server.
+SECONDS_BETWEEN_UPDATES = 1  # How many seconds to wait before updating the server.
 PRINT_VOLUMES = True
 MAX_VOLUME = 500
 

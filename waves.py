@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 
 from enum import Enum, auto
@@ -45,3 +47,4 @@ def lighting_step(wave_type: WaveType, bpm: float, wave_start_time: float) -> fl
     wave_cycle_progress = time_from_start % wave_cycle_time
     normalized_wave_cycle_progress = max(0, min(1, wave_cycle_progress / wave_cycle_time))
     return wave_state(wave_type=wave_type, phase=normalized_wave_cycle_progress)
+
