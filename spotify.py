@@ -1,11 +1,11 @@
 import os
-import sqlite3
-import time
 
 from dotenv import load_dotenv
 
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
+
+import db
 
 load_dotenv(".env")
 
@@ -13,107 +13,6 @@ client_id = os.environ["SPOTIFY_CLIENT_ID"]
 client_secret = os.environ["SPOTIFY_CLIENT_SECRET"]
 redirect_uri = os.environ.get("SPOTIFY_REDIRECT_URI", "http://localhost:8080")
 party_playlist_id = os.environ["SPOTIFY_PARTY_PLAYLIST_ID"]
-
-
-def initialize_db():
-    con = sqlite3.connect("spotify.db")
-    cur = con.cursor()
-    # Create a Tracks table if it doesn't exist, with the following columns:
-    # - id (primary key)
-    # - name
-    # - artist
-    # - album
-    # - danceability
-    # - energy
-    # - key
-    # - loudness
-    # - mode
-    # - speechiness
-    # - acousticness
-    # - instrumentalness
-    # - liveness
-    # - valence
-    # - tempo
-    # - duration_ms
-    # - time_signature
-    # - Playlist ID
-    cur.execute(
-        """
-        CREATE TABLE IF NOT EXISTS Tracks (
-            id TEXT PRIMARY KEY,
-            name TEXT,
-            artist TEXT,
-            album TEXT,
-            danceability REAL,
-            energy REAL,
-            key INTEGER,
-            loudness REAL,
-            mode INTEGER,
-            speechiness REAL,
-            acousticness REAL,
-            instrumentalness REAL,
-            liveness REAL,
-            valence REAL,
-            tempo REAL,
-            popularity INTEGER,
-            duration_ms INTEGER,
-            time_signature INTEGER,
-            playlist_id TEXT
-        )
-        """
-    )
-
-
-def insert_track(track: dict, playlist_id: str) -> None:
-    con = sqlite3.connect("spotify.db")
-    cur = con.cursor()
-    # Insert a track into the Tracks table. Track is a dictionary mapped with the keys above.
-    # If the track already exists, update the values.
-    cur.execute(
-        """
-        INSERT OR IGNORE INTO Tracks (
-            id, name, artist, album, danceability, energy, key, loudness, mode, speechiness, acousticness, instrumentalness, liveness, valence, tempo, popularity, duration_ms, time_signature, playlist_id
-            )
-        VALUES (
-             ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-             )          
-        """,
-        (
-            track["id"],
-            track["name"],
-            track["artist"],
-            track["album"],
-            track["danceability"],
-            track["energy"],
-            track["key"],
-            track["loudness"],
-            track["mode"],
-            track["speechiness"],
-            track["acousticness"],
-            track["instrumentalness"],
-            track["liveness"],
-            track["valence"],
-            track["tempo"],
-            track["popularity"],
-            track["duration_ms"],
-            track["time_signature"],
-            playlist_id,
-        ),
-    )
-    con.commit()
-
-
-def find_track(bpm: int):
-    # find tracks with similar bpm and select one in random.
-    con = sqlite3.connect("spotify.db")
-    cur = con.cursor()
-    cur.execute(
-        """
-        SELECT * FROM Tracks WHERE tempo BETWEEN ? AND ? ORDER BY RANDOM() LIMIT 1
-        """,
-        (bpm - 5, bpm + 5),
-    )
-    return cur.fetchone()
 
 
 
@@ -137,7 +36,7 @@ def initialize_spotipy_client():
 
 sp = initialize_spotipy_client()
 
-initialize_db()
+db.initialize_db()
 
 
 def get_track_artist(track: dict) -> str:
@@ -182,7 +81,7 @@ def get_playlist_tracks():
     for track in all_tracks:
         features = sp.audio_features(track["track"]["id"])[0]
         track_dict = build_track_dict(track["track"], features)
-        insert_track(track_dict, party_playlist_id)
+        db.insert_track(track_dict, party_playlist_id)
 
 
 # get_playlist_tracks()
@@ -194,6 +93,9 @@ def get_currently_playing_tempo() -> float:
 
 def get_current_song_position() -> int:
     return int(sp.currently_playing()["progress_ms"])
+
+def add_to_queue(track: tuple) -> None:
+    sp.add_to_queue(track[0])
 
 # tempo = get_currently_playing_tempo()
 # track = find_track(tempo)
