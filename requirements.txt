@@ -13,5 +13,6 @@ Flask[async]==2.3.2
 sounddevice
 spotipy==2.23.0
 python-dotenv==1.0.0
-pytradfri==13.0.0
+pytradfri[async]==13.0.0
 pydantic==1.10.9
+aiocoap==0.4.7
