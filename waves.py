@@ -43,7 +43,7 @@ def choose_wave(genre: str, num_people: int) -> WaveType:
 def lighting_step(wave_type: WaveType, bpm: float, wave_start_time: float) -> float:
     """Given wave type, BPM, and wave start time, return the current lighting step (brightness)."""
     time_from_start = now() - wave_start_time
-    wave_cycle_time = 60 / bpm
+    wave_cycle_time = 4 * 60 / bpm
     wave_cycle_progress = time_from_start % wave_cycle_time
     normalized_wave_cycle_progress = max(0, min(1, wave_cycle_progress / wave_cycle_time))
     return wave_state(wave_type=wave_type, phase=normalized_wave_cycle_progress)
