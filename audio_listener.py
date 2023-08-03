@@ -8,7 +8,7 @@ from time import time as now
 # Configuration options.
 SAMPLE_WINDOW_SIZE = 300  # How many audio frames to keep in the buffer for analysis.
 SECONDS_BETWEEN_UPDATES = 1  # How many seconds to wait before updating the server.
-PRINT_VOLUMES = True
+PRINT_VOLUMES = False
 MAX_VOLUME = 500
 
 # Persistent data.
@@ -20,7 +20,7 @@ SAMPLES_SINCE_LAST_UPDATE = 0
 def update_server():
     global VOLUME_HISTORY
     new_average = sum(VOLUME_HISTORY) / SAMPLE_WINDOW_SIZE
-    requests.post(f"http://localhost:5000/input_volume/{new_average}")
+    requests.post(f"http://localhost:3000/input_volume/{new_average}")
 
 
 def append_volume(indata, frames, time, status):
