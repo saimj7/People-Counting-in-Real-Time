@@ -1,5 +1,5 @@
 # People-Counting-in-Real-Time
-People Counting in Real-Time using live video stream/IP camera in OpenCV.
+People Counting in Real-Time using live video stream/IP camera in OpenCV with support for both horizontal and vertical counting modes.
 
 > NOTE: This is an improvement/modification to https://www.pyimagesearch.com/2018/08/13/opencv-people-counter/
 
@@ -10,6 +10,7 @@ People Counting in Real-Time using live video stream/IP camera in OpenCV.
 
 - The primary aim is to use the project as a business perspective, ready to scale.
 - Use case: counting the number of people in the stores/buildings/shopping malls etc., in real-time.
+- **NEW**: Supports both horizontal counting (people crossing vertical lines) and vertical counting (people crossing horizontal lines).
 - Sending an alert to the staff if the people are way over the limit.
 - Automating features and optimising the real-time stream for better performance (with threading).
 - Acts as a measure towards footfall analysis and in a way to tackle COVID-19 scenarios.
@@ -21,6 +22,9 @@ People Counting in Real-Time using live video stream/IP camera in OpenCV.
 * [Simple Theory](#simple-theory)
     - [SSD detector](#ssd-detector)
     - [Centroid tracker](#centroid-tracker)
+* [Counting Modes](#counting-modes)
+    - [Horizontal counting mode](#horizontal-counting-mode)
+    - [Vertical counting mode](#vertical-counting-mode)
 * [Running Inference](#running-inference)
     - [Install the dependencies](#install-the-dependencies)
     - [Test video file](#test-video-file)
@@ -55,6 +59,39 @@ People Counting in Real-Time using live video stream/IP camera in OpenCV.
 
 ---
 
+## Counting Modes
+
+The system now supports two different counting modes to accommodate different camera orientations and use cases:
+
+### Horizontal counting mode
+
+- **Default mode** (triggered with `-M h` or `--mode h`)
+- People are counted when they cross a **vertical line** in the center of the frame
+- Suitable for monitoring doorways, corridors, or passages where people move left-to-right or right-to-left
+- The prediction border appears as a vertical red line in the center of the frame
+- **Left movement**: People moving from right to left (counted as "up/left") 
+- **Right movement**: People moving from left to right (counted as "down/right")
+
+### Vertical counting mode
+
+- Triggered with `-M v` or `--mode v`
+- People are counted when they cross a **horizontal line** in the center of the frame  
+- Suitable for monitoring stairs, escalators, or passages where people move up-and-down
+- The prediction border appears as a horizontal red line in the center of the frame
+- **Up movement**: People moving from bottom to top (counted as "up")
+- **Down movement**: People moving from top to bottom (counted as "down")
+
+**Usage Examples:**
+```bash
+# Horizontal counting (default)
+python people_counter.py --mode h
+
+# Vertical counting  
+python people_counter.py --mode v
+```
+
+---
+
 ## Running Inference
 
 ### Install the dependencies
@@ -69,7 +106,14 @@ pip install -r requirements.txt ```
 To run inference on a test video file, head into the root directory and run the command: 
 
 ```
-python people_counter.py --prototxt detector/MobileNetSSD_deploy.prototxt --model detector/MobileNetSSD_deploy.caffemodel --input utils/data/tests/test_1.mp4
+python people_counter.py --input utils/data/tests/test_1.mp4
+```
+
+> NOTE: The system now uses improved MobileNet models by default (`mobilenet_iter_73000_deploy.prototxt` and `mobilenet_iter_73000.caffemodel`) with higher confidence threshold (0.8) for better accuracy.
+
+**Advanced usage with custom parameters:**
+```
+python people_counter.py --input utils/data/tests/test_1.mp4 --mode h --confidence 0.8 --width 500 --eps 5
 ```
 
 ### Webcam
@@ -77,7 +121,13 @@ python people_counter.py --prototxt detector/MobileNetSSD_deploy.prototxt --mode
 To run on a webcam, set ```"url": 0``` in ```utils/config.json``` and run the command:
 
 ```
-python people_counter.py --prototxt detector/MobileNetSSD_deploy.prototxt --model detector/MobileNetSSD_deploy.caffemodel
+python people_counter.py
+```
+
+**With counting mode selection:**
+```
+python people_counter.py --mode v  # for vertical counting
+python people_counter.py --mode h  # for horizontal counting (default)
 ```
 
 ### IP camera
@@ -86,8 +136,30 @@ To run on an IP camera, setup your camera url in ```utils/config.json```, e.g., 
 
 Then run the command:
 ```
-python people_counter.py --prototxt detector/MobileNetSSD_deploy.prototxt --model detector/MobileNetSSD_deploy.caffemodel
+python people_counter.py
 ```
+
+**With custom parameters:**
+```
+python people_counter.py --mode h --width 600 --confidence 0.7
+```
+
+### Command Line Arguments
+
+The system supports various command line arguments for customization:
+
+| Argument | Short | Default | Description |
+|----------|-------|---------|-------------|
+| `--prototxt` | `-p` | `detector/mobilenet_iter_73000_deploy.prototxt` | Path to Caffe deploy prototxt file |
+| `--model` | `-m` | `detector/mobilenet_iter_73000.caffemodel` | Path to Caffe pre-trained model |
+| `--input` | `-i` | - | Path to optional input video file |
+| `--output` | `-o` | - | Path to optional output video file |
+| `--confidence` | `-c` | `0.8` | Minimum probability to filter weak detections |
+| `--skip-frames` | `-s` | `30` | Number of skip frames between detections |
+| `--skip-frames-tracking` | `-st` | `2` | Number of skip frames between tracking |
+| `--eps` | `-e` | `5` | Error tolerance for tracking algorithm |
+| `--mode` | `-M` | `h` | Counting mode: 'v' for vertical, 'h' for horizontal |
+| `--width` | `-w` | `500` | Resize frame to specified width before processing |
 
 ---
 
@@ -109,6 +181,18 @@ The following features can be easily enabled/disabled in ```utils/config.json```
     "Timer": false
 }
 ```
+
+### Enhanced Visualization
+
+The system now includes improved visual feedback for better monitoring:
+
+- **Prediction Border**: A red line (horizontal or vertical) shows the counting boundary
+  - Horizontal mode: Vertical red line in the center  
+  - Vertical mode: Horizontal red line in the center
+- **Bounding Boxes**: Green rectangles are drawn around all detected people in real-time
+- **Directional Labels**: Console output shows movement direction ("up/left" or "down/right") 
+- **Improved Text Positioning**: Better placement and color contrast for on-screen information
+- **Configurable Frame Width**: Resize processing frame for optimal performance (`--width` parameter)
 
 ### Real-Time alert
 

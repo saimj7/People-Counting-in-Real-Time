@@ -30,19 +30,27 @@ with open("utils/config.json", "r") as file:
 def parse_arguments():
 	# function to parse the arguments
     ap = argparse.ArgumentParser()
-    ap.add_argument("-p", "--prototxt", required=False,
+    ap.add_argument("-p", "--prototxt", required=False, default="detector/mobilenet_iter_73000_deploy.prototxt",
         help="path to Caffe 'deploy' prototxt file")
-    ap.add_argument("-m", "--model", required=True,
+    ap.add_argument("-m", "--model", required=False, default="detector/mobilenet_iter_73000.caffemodel",
         help="path to Caffe pre-trained model")
     ap.add_argument("-i", "--input", type=str,
         help="path to optional input video file")
     ap.add_argument("-o", "--output", type=str,
         help="path to optional output video file")
     # confidence default 0.4
-    ap.add_argument("-c", "--confidence", type=float, default=0.4,
+    ap.add_argument("-c", "--confidence", type=float, default=0.8,
         help="minimum probability to filter weak detections")
     ap.add_argument("-s", "--skip-frames", type=int, default=30,
         help="# of skip frames between detections")
+    ap.add_argument("-st", "--skip-frames-tracking", type=int, default=2,
+        help="# of skip frames between tracking")
+    ap.add_argument("-e", "--eps", type=int, default=5,
+        help="error tolerance for tracking algorithm")
+    ap.add_argument("-M", "--mode", type=str,default= "h",
+        help="vertical counting 'v' or horizontal counting 'h'")
+    ap.add_argument("-w", "--width", type=int,default= 500,
+        help="resize to specified width before processing")
     args = vars(ap.parse_args())
     return args
 
@@ -118,6 +126,8 @@ def people_counter():
 	if config["Thread"]:
 		vs = thread.ThreadingClass(config["url"])
 
+	# bounding box list
+	bbox = []
 	# loop over frames from the video stream
 	while True:
 		# grab the next frame and handle if we are reading from either
@@ -133,7 +143,7 @@ def people_counter():
 		# resize the frame to have a maximum width of 500 pixels (the
 		# less data we have, the faster we can process it), then convert
 		# the frame from BGR to RGB for dlib
-		frame = imutils.resize(frame, width = 500)
+		frame = imutils.resize(frame, width = args.get("width", 500))
 		rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
 		# if the frame dimensions are empty, set them
@@ -165,7 +175,9 @@ def people_counter():
 			blob = cv2.dnn.blobFromImage(frame, 0.007843, (W, H), 127.5)
 			net.setInput(blob)
 			detections = net.forward()
-
+			#initialize the bounding box list if the detections shape is not empty
+			if detections.shape[2] > 0:
+				bbox = []
 			# loop over the detections
 			for i in np.arange(0, detections.shape[2]):
 				# extract the confidence (i.e., probability) associated
@@ -187,7 +199,7 @@ def people_counter():
 					# for the object
 					box = detections[0, 0, i, 3:7] * np.array([W, H, W, H])
 					(startX, startY, endX, endY) = box.astype("int")
-
+					bbox.append((startX, startY, endX, endY))
 					# construct a dlib rectangle object from the bounding
 					# box coordinates and then start the dlib correlation
 					# tracker
@@ -201,7 +213,9 @@ def people_counter():
 
 		# otherwise, we should utilize our object *trackers* rather than
 		# object *detectors* to obtain a higher frame processing throughput
-		else:
+		elif totalFrames % args["skip_frames_tracking"] == 0:
+			# initialize the bounding box list during tracking
+			bbox = []
 			# loop over the trackers
 			for tracker in trackers:
 				# set the status of our system to be 'tracking' rather
@@ -220,13 +234,19 @@ def people_counter():
 
 				# add the bounding box coordinates to the rectangles list
 				rects.append((startX, startY, endX, endY))
+				bbox.append((startX, startY, endX, endY))
 
 		# draw a horizontal line in the center of the frame -- once an
 		# object crosses this line we will determine whether they were
 		# moving 'up' or 'down'
-		cv2.line(frame, (0, H // 2), (W, H // 2), (0, 0, 0), 3)
-		cv2.putText(frame, "-Prediction border - Entrance-", (10, H - ((i * 20) + 200)),
-			cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+		if args["mode"] == "v":
+			cv2.line(frame, (0, H // 2), (W, H // 2), (0, 0, 255), 3)
+			cv2.putText(frame, "-Prediction border - Exit-", (int(W*0.1), H // 2),
+				cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
+		else:
+			cv2.line(frame, (W // 2, 0), (W // 2, H), (0, 0, 255), 3)
+			cv2.putText(frame, "-Prediction border - Entrance-", ( W // 2, int(H * 0.1)),
+				cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
 
 		# use the centroid tracker to associate the (1) old object
 		# centroids with (2) the newly computed object centroids
@@ -249,16 +269,23 @@ def people_counter():
 				# centroid and the mean of *previous* centroids will tell
 				# us in which direction the object is moving (negative for
 				# 'up' and positive for 'down')
-				y = [c[1] for c in to.centroids]
-				direction = centroid[1] - np.mean(y)
-				to.centroids.append(centroid)
+				if args["mode"] == "v":
+					y = [c[1] for c in to.centroids]
+					direction = centroid[1] - np.mean(y)
+					to.centroids.append(centroid)
+				else:
+					x = [c[0] for c in to.centroids]
+					direction = centroid[0] - np.mean(x)
+					to.centroids.append(centroid)
 
 				# check to see if the object has been counted or not
 				if not to.counted:
 					# if the direction is negative (indicating the object
 					# is moving up) AND the centroid is above the center
 					# line, count the object
-					if direction < 0 and centroid[1] < H // 2:
+					# move up or move left
+					if (args["mode"] == "v" and direction < -args.get("eps") and centroid[1] < H // 2) or (args["mode"] == "h" and direction < -args.get("eps") and centroid[0] < W // 2):
+						print("up/left")
 						totalUp += 1
 						date_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 						move_out.append(totalUp)
@@ -268,7 +295,9 @@ def people_counter():
 					# if the direction is positive (indicating the object
 					# is moving down) AND the centroid is below the
 					# center line, count the object
-					elif direction > 0 and centroid[1] > H // 2:
+					# move down or move right
+					elif (args['mode'] == 'v' and direction > args.get("eps") and centroid[1] > H // 2) or (args["mode"] == "h" and direction > args.get("eps") and centroid[0] > W // 2):
+						print("down/right")
 						totalDown += 1
 						date_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 						move_in.append(totalDown)
@@ -306,7 +335,8 @@ def people_counter():
 		]
 
 		info_total = [
-		("Total people inside", ', '.join(map(str, total))),
+		# ("Total people inside", ', '.join(map(str, total))),
+		("Total people inside", str(totalDown - totalUp)),
 		]
 
 		# display the output
@@ -321,6 +351,11 @@ def people_counter():
 		# initiate a simple log to save the counting data
 		if config["Log"]:
 			log_data(move_in, in_time, move_out, out_time)
+
+		# draw the bounding box
+		if len(bbox) > 0:
+			for start_x, start_y, end_x, end_y in bbox:
+				cv2.rectangle(frame, (start_x, start_y), (end_x, end_y), (0, 255, 0), 2)
 
 		# check to see if we should write the frame to disk
 		if writer is not None:
