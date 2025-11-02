@@ -18,7 +18,7 @@ import json
 import csv
 import cv2
 
-# execution start time
+## execution start time
 start_time = time.time()
 # setup logger
 logging.basicConfig(level = logging.INFO, format = "[INFO] %(message)s")
